@@ -20,8 +20,6 @@ typedef enum _x86_x64OperandType
 	x86_x64OperandType_DI,
 
 	x86_x64OperandType_IMM = 1 << 5,
-	x86_x64OperandType_IMMN64 = 1 << 5,	// No 64
-	x86_x64OperandType_IMM64,	// 64 Compatible
 	x86_x64OperandType_MIMM
 } x86_x64OperandType, *Px86_x64OperandType;
 
@@ -56,6 +54,7 @@ typedef union _x86_x64PrefixMap
 		unsigned char REXW : 1;
 		unsigned char GS : 1;
 		unsigned char FS : 1;
+		unsigned char WORD : 1;
 	};
 } x86_x64PrefixMap, *Px86_x64PrefixMap;
 
@@ -132,7 +131,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x04].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x04].I.Operands[1].O8 = 1;
-	SetBuffer[0x04].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x04].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x05].Behaviour = InstructionBehaviour_Add;
 
@@ -143,8 +142,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x05].I.Operands[1].O16 = 1;
 	SetBuffer[0x05].I.Operands[1].O32 = 1;
-	SetBuffer[0x05].I.Operands[1].O64 = 1;
-	SetBuffer[0x05].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x05].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x08].Behaviour = InstructionBehaviour_Or;
 
@@ -192,7 +190,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x0C].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x0C].I.Operands[1].O8 = 1;
-	SetBuffer[0x0C].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x0C].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x0D].Behaviour = InstructionBehaviour_Or;
 
@@ -203,8 +201,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x0D].I.Operands[1].O16 = 1;
 	SetBuffer[0x0D].I.Operands[1].O32 = 1;
-	SetBuffer[0x0D].I.Operands[1].O64 = 1;
-	SetBuffer[0x0D].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x0D].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x10].Behaviour = InstructionBehaviour_Adc;
 
@@ -252,7 +249,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x14].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x14].I.Operands[1].O8 = 1;
-	SetBuffer[0x14].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x14].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x15].Behaviour = InstructionBehaviour_Adc;
 
@@ -263,8 +260,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x15].I.Operands[1].O16 = 1;
 	SetBuffer[0x15].I.Operands[1].O32 = 1;
-	SetBuffer[0x15].I.Operands[1].O64 = 1;
-	SetBuffer[0x15].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x15].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x18].Behaviour = InstructionBehaviour_Sbb;
 
@@ -312,7 +308,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x1C].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x1C].I.Operands[1].O8 = 1;
-	SetBuffer[0x1C].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x1C].I.Operands[1].Type = x86_x64OperandType_IMM;
 	
 	SetBuffer[0x1D].Behaviour = InstructionBehaviour_Sbb;
 
@@ -323,8 +319,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x1D].I.Operands[1].O16 = 1;
 	SetBuffer[0x1D].I.Operands[1].O32 = 1;
-	SetBuffer[0x1D].I.Operands[1].O64 = 1;
-	SetBuffer[0x1D].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x1D].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x20].Behaviour = InstructionBehaviour_And;
 
@@ -372,7 +367,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x24].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x24].I.Operands[1].O8 = 1;
-	SetBuffer[0x24].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x24].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x25].Behaviour = InstructionBehaviour_And;
 
@@ -383,8 +378,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x25].I.Operands[1].O16 = 1;
 	SetBuffer[0x25].I.Operands[1].O32 = 1;
-	SetBuffer[0x25].I.Operands[1].O64 = 1;
-	SetBuffer[0x25].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x25].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x26].Prefix = 1;
 	SetBuffer[0x26].P.Prefix.Value = 0;
@@ -435,7 +429,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x2C].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x2C].I.Operands[1].O8 = 1;
-	SetBuffer[0x2C].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x2C].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x2D].Behaviour = InstructionBehaviour_Sub;
 
@@ -446,8 +440,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x2D].I.Operands[1].O16 = 1;
 	SetBuffer[0x2D].I.Operands[1].O32 = 1;
-	SetBuffer[0x2D].I.Operands[1].O64 = 1;
-	SetBuffer[0x2D].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x2D].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x2E].Prefix = 1;
 	SetBuffer[0x2E].P.Prefix.Value = 0;
@@ -498,7 +491,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x34].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x34].I.Operands[1].O8 = 1;
-	SetBuffer[0x34].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x34].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x35].Behaviour = InstructionBehaviour_Xor;
 
@@ -509,8 +502,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x35].I.Operands[1].O16 = 1;
 	SetBuffer[0x35].I.Operands[1].O32 = 1;
-	SetBuffer[0x35].I.Operands[1].O64 = 1;
-	SetBuffer[0x35].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x35].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x36].Prefix = 1;
 	SetBuffer[0x36].P.Prefix.Value = 0;
@@ -561,7 +553,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SetBuffer[0x3C].I.Operands[0].Type = (x86_x64OperandType)(x86_x64OperandType_AX | x86_x64OperandType_SSR);
 
 	SetBuffer[0x3C].I.Operands[1].O8 = 1;
-	SetBuffer[0x3C].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x3C].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x3D].Behaviour = InstructionBehaviour_Cmp;
 
@@ -572,8 +564,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x3D].I.Operands[1].O16 = 1;
 	SetBuffer[0x3D].I.Operands[1].O32 = 1;
-	SetBuffer[0x3D].I.Operands[1].O64 = 1;
-	SetBuffer[0x3D].I.Operands[1].Type = x86_x64OperandType_IMMN64;
+	SetBuffer[0x3D].I.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SetBuffer[0x3E].Prefix = 1;
 	SetBuffer[0x3E].P.Prefix.Value = 0;
@@ -768,6 +759,58 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 
 	SetBuffer[0x65].Prefix = 1;
 	SetBuffer[0x65].P.Prefix.FS = 1;
+
+	SetBuffer[0x66].Prefix = 1;
+	SetBuffer[0x66].P.Prefix.WORD = 1;
+
+	SetBuffer[0x67].Prefix = 1; // Not yet established
+	SetBuffer[0x67].P.Prefix.Value = 0;
+
+	SetBuffer[0x68].Behaviour = InstructionBehaviour_Push;
+
+	SetBuffer[0x68].I.Operands[0].O16 = 1;
+	SetBuffer[0x68].I.Operands[0].O32 = 1;
+	SetBuffer[0x68].I.Operands[0].Type = x86_x64OperandType_IMM;
+
+	SetBuffer[0x69].Behaviour = InstructionBehaviour_Imul;
+
+	SetBuffer[0x69].I.Operands[0].O16 = 1;
+	SetBuffer[0x69].I.Operands[0].O32 = 1;
+	SetBuffer[0x69].I.Operands[0].O64 = 1;
+	SetBuffer[0x69].I.Operands[0].Type = x86_x64OperandType_R;
+
+	SetBuffer[0x69].I.Operands[1].O16 = 1;
+	SetBuffer[0x69].I.Operands[1].O32 = 1;
+	SetBuffer[0x69].I.Operands[1].O64 = 1;
+	SetBuffer[0x69].I.Operands[1].Type = x86_x64OperandType_M;
+
+	SetBuffer[0x69].I.Operands[2].O16 = 1;
+	SetBuffer[0x69].I.Operands[2].O32 = 1;
+	SetBuffer[0x69].I.Operands[2].Type = x86_x64OperandType_IMM;
+
+	SetBuffer[0x6A].Behaviour = InstructionBehaviour_Push;
+
+	SetBuffer[0x6A].I.Operands[0].O8 = 1;
+	SetBuffer[0x6A].I.Operands[0].Type = x86_x64OperandType_IMM;
+
+	SetBuffer[0x6B].Behaviour = InstructionBehaviour_Imul;
+
+	SetBuffer[0x6B].I.Operands[0].O16 = 1;
+	SetBuffer[0x6B].I.Operands[0].O32 = 1;
+	SetBuffer[0x6B].I.Operands[0].O64 = 1;
+	SetBuffer[0x6B].I.Operands[0].Type = x86_x64OperandType_R;
+
+	SetBuffer[0x6B].I.Operands[1].O16 = 1;
+	SetBuffer[0x6B].I.Operands[1].O32 = 1;
+	SetBuffer[0x6B].I.Operands[1].O64 = 1;
+	SetBuffer[0x6B].I.Operands[1].Type = x86_x64OperandType_M;
+
+	SetBuffer[0x6B].I.Operands[2].O8 = 1;
+	SetBuffer[0x6B].I.Operands[2].Type = x86_x64OperandType_IMM;
+
+	SetBuffer[0x6C].Behaviour = InstructionBehaviour_Ins;
+
+	SetBuffer[0x6C].Behaviour = InstructionBehaviour_Ins;
 }
 
 static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long long CodeSize, Operation* OperationBuffer, unsigned long long* OperationCount)
@@ -968,6 +1011,9 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 
 			if (Instruction->I.Operands[i].O64 && PrefixMap.REXW)
 				OperationBuffer->Operands[i].OperandSize = OperandSize_64;
+
+			else if (Instruction->I.Operands[i].O16 && PrefixMap.WORD)
+				OperationBuffer->Operands[i].OperandSize = OperandSize_16;
 		}
 
 		for (unsigned char i = MainOperand > 4 ? 0 : 2; i < 4; i++)
@@ -979,21 +1025,7 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 			{
 				switch (Instruction->I.Operands[i].Type)
 				{
-				case x86_x64OperandType_IMM64:
-				{
-					if (OperationBuffer->Operands[i].OperandSize == OperandSize_64)
-					{
-						OperationBuffer->Operands[i].Type = OperandType_V;
-						OperationBuffer->Operands[i].Value.ValueSize = 1;
-						OperationBuffer->Operands[i].Value.Value = *(unsigned char*)Code;
-
-						CodeSize -= 8;
-						Code = ((unsigned char*)Code) + 8;
-
-						break;
-					}
-				}
-				case x86_x64OperandType_IMMN64:
+				case x86_x64OperandType_IMM:
 				{
 					OperationBuffer->Operands[i].Type = OperandType_V;
 					switch (OperationBuffer->Operands[i].OperandSize)
@@ -1021,6 +1053,14 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 
 						CodeSize -= 4;
 						Code = ((unsigned char*)Code) + 4;
+					} break;
+					case OperandSize_64:
+					{
+						OperationBuffer->Operands[i].Value.ValueSize = 1;
+						OperationBuffer->Operands[i].Value.Value = *(unsigned char*)Code;
+
+						CodeSize -= 8;
+						Code = ((unsigned char*)Code) + 8;
 					} break;
 					}
 				} break;

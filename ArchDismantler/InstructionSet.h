@@ -13,7 +13,9 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Cmp,
 	InstructionBehaviour_Push,
 	InstructionBehaviour_Pop,
-	InstructionBehaviour_Movsxd
+	InstructionBehaviour_Movsxd,
+	InstructionBehaviour_Imul,
+	InstructionBehaviour_Ins
 } InstructionBehaviour, *PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -127,7 +129,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		*(Buffer + StringLength) = ']';
 		*(Buffer + StringLength + 1) = '\0';
 
-		StringLength += 2;
+		StringLength++;
 	} break;
 	case OperandType_ML:
 	{
@@ -167,7 +169,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* BehaviourToString[] = { "Add", "Or", "Adc", "Sbb", "And", "Sub", "Xor", "Cmp", "Push", "Pop", "Movsxd" };
+	const char* BehaviourToString[] = { "Add", "Or", "Adc", "Sbb", "And", "Sub", "Xor", "Cmp", "Push", "Pop", "Movsxd", "Imul" };
 
 	char Buffer[0x100];
 	char* RunBuffer;
