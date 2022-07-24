@@ -33,12 +33,16 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Jge,
 	InstructionBehaviour_Jle,
 	InstructionBehaviour_Jg,
-	InstructionBehaviour_Jmp
+	InstructionBehaviour_Jmp,
+	InstructionBehaviour_Test,
+	InstructionBehaviour_Xchg,
+	InstructionBehaviour_Mov
 } InstructionBehaviour, *PInstructionBehaviour;
 
 typedef enum _OperandType
 {
 	OperandType_None,
+	OperandType_SR,	// Segment register
 	OperandType_IR,	// Integer register
 	OperandType_M,	// Memory
 	OperandType_ML,	// Memory large
@@ -71,7 +75,7 @@ typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for rel
 		{
 			unsigned char Register;
 			unsigned char HighLowPart; // Low part 0, High part 1
-		} IRegister;
+		} Register;
 
 		struct
 		{
@@ -124,7 +128,11 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	{
 	case OperandType_IR:
 	{
-		StringLength = sprintf(Buffer, "R%u%c", Operand->IRegister.Register - 1, !Operand->OperandSize ? HighLowSuffix[Operand->IRegister.HighLowPart] : SizeSuffix[Operand->OperandSize]) - (SizeSuffix[Operand->OperandSize] ? 0 : 1);
+		StringLength = sprintf(Buffer, "R%u%c", Operand->Register.Register - 1, !Operand->OperandSize ? HighLowSuffix[Operand->Register.HighLowPart] : SizeSuffix[Operand->OperandSize]) - (SizeSuffix[Operand->OperandSize] ? 0 : 1);
+	} break;
+	case OperandType_SR:
+	{
+		StringLength = sprintf(Buffer, "S%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_M:
 	{
@@ -225,7 +233,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg" };
+	const char* BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov" };
 
 	char Buffer[0x100];
 	char* RunBuffer;
