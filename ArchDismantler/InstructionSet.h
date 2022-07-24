@@ -15,7 +15,25 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Pop,
 	InstructionBehaviour_Movsxd,
 	InstructionBehaviour_Imul,
-	InstructionBehaviour_Ins
+	InstructionBehaviour_Ins,
+	InstructionBehaviour_Outs,
+	InstructionBehaviour_Jo,
+	InstructionBehaviour_Jno,
+	InstructionBehaviour_Jb,
+	InstructionBehaviour_Jae,
+	InstructionBehaviour_Je,
+	InstructionBehaviour_Jne,
+	InstructionBehaviour_Jbe,
+	InstructionBehaviour_Ja,
+	InstructionBehaviour_Js,
+	InstructionBehaviour_Jns,
+	InstructionBehaviour_Jp,
+	InstructionBehaviour_Jnp,
+	InstructionBehaviour_Jl,
+	InstructionBehaviour_Jge,
+	InstructionBehaviour_Jle,
+	InstructionBehaviour_Jg,
+	InstructionBehaviour_Jmp
 } InstructionBehaviour, *PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -25,6 +43,7 @@ typedef enum _OperandType
 	OperandType_M,	// Memory
 	OperandType_ML,	// Memory large
 	OperandType_V,	// Value
+	OperandType_Rel // Relative value
 } OperandType, *POperandType;
 
 typedef enum _OperandSize
@@ -34,6 +53,13 @@ typedef enum _OperandSize
 	OperandSize_32,
 	OperandSize_64
 } OperandSize, *POperandSize;
+
+typedef enum _MemoryOffsetSize
+{
+	MemoryOffsetSize_0,
+	MemoryOffsetSize_8,
+	MemoryOffsetSize_32
+};
 
 typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for relativity
 {
@@ -64,20 +90,18 @@ typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for rel
 
 		struct
 		{
-			struct
-			{
-				unsigned char Segment : 4;
-				unsigned char ValueSize : 3;
-			};
-
 			unsigned long long Value;
 		} MemoryLarge;
 
 		struct
 		{
-			unsigned char ValueSize;
 			unsigned long long Value;
 		} Value;
+
+		struct
+		{
+			long Value;
+		} RelValue;
 	};
 } Operand, *POperand;
 
@@ -104,16 +128,41 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	} break;
 	case OperandType_M:
 	{
-		StringLength = 1;
+		StringLength = 0;
+
+		switch (Operand->OperandSize)
+		{
+		case OperandSize_8:
+		{
+			StringLength = sprintf(Buffer, "byte ptr ");
+		} break;
+		case OperandSize_16:
+		{
+			StringLength = sprintf(Buffer, "word ptr ");
+		} break;
+		case OperandSize_32:
+		{
+			StringLength = sprintf(Buffer, "dword ptr ");
+		} break;
+		case OperandSize_64:
+		{
+			StringLength = sprintf(Buffer, "qword ptr ");
+		} break;
+		} 
+
 		if (Operand->Memory.Segment)
-			StringLength = sprintf(Buffer, "S%u:", Operand->Memory.Segment - 1) + 1;
+			StringLength += sprintf(Buffer, "S%u:", Operand->Memory.Segment - 1);
 
-		*(Buffer + StringLength - 1) = '[';
+		*(Buffer + StringLength) = '[';
+		StringLength++;
 
-		if (Operand->Memory.FirstRegister == (unsigned char)~0)
-			StringLength += sprintf(Buffer + StringLength, "Rel %c %X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
-		else
-			StringLength += sprintf(Buffer + StringLength, "R%u", Operand->Memory.FirstRegister - 1);
+		if (Operand->Memory.FirstRegister)
+		{
+			if (Operand->Memory.FirstRegister == (unsigned char)~0)
+				StringLength += sprintf(Buffer + StringLength, "Rel %c %X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
+			else
+				StringLength += sprintf(Buffer + StringLength, "R%u", Operand->Memory.FirstRegister - 1);
+		}
 
 		if (Operand->Memory.SecondRegister)
 			StringLength += sprintf(Buffer + StringLength, " + R%u", Operand->Memory.SecondRegister - 1);
@@ -121,10 +170,20 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		if (Operand->Memory.Multiplier)
 			StringLength += sprintf(Buffer + StringLength, " * %c", Multiplier[Operand->Memory.Multiplier]);
 
-		if (Operand->Memory.OffsetSize == 1)
+		if (Operand->Memory.OffsetSize == MemoryOffsetSize_8)
+		{
+			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
+				StringLength += sprintf(Buffer + StringLength, "%02X", Operand->Memory.Offset);
+
 			StringLength += sprintf(Buffer + StringLength, " %c %02X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
-		else if (Operand->Memory.OffsetSize == 2)
+		}
+		else if (Operand->Memory.OffsetSize == MemoryOffsetSize_32)
+		{
+			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
+				StringLength += sprintf(Buffer + StringLength, "%08X", Operand->Memory.Offset);
+
 			StringLength += sprintf(Buffer + StringLength, " %c %08X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
+		}
 
 		*(Buffer + StringLength) = ']';
 		*(Buffer + StringLength + 1) = '\0';
@@ -133,27 +192,24 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	} break;
 	case OperandType_ML:
 	{
+		StringLength = sprintf(Buffer + StringLength, "[%016llX]", Operand->MemoryLarge.Value);
+	} break;
+	case OperandType_Rel:
+	{
 		StringLength = 0;
-		if (Operand->Memory.Segment)
-			StringLength = sprintf(Buffer, "S%u:", Operand->Memory.Segment);
-
-		switch (Operand->MemoryLarge.ValueSize)
+		switch (Operand->OperandSize)
 		{
-		case 1:
+		case OperandSize_8:
 		{
-			StringLength = sprintf(Buffer + StringLength, "[%02X]", Operand->MemoryLarge.Value);
+			StringLength = sprintf(Buffer + StringLength, "Rel %c %02X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
-		case 2:
+		case OperandSize_16:
 		{
-			StringLength = sprintf(Buffer + StringLength, "[%04X]", Operand->MemoryLarge.Value);
+			StringLength = sprintf(Buffer + StringLength, "Rel %c %04X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
-		case 3:
+		case OperandSize_32:
 		{
-			StringLength = sprintf(Buffer + StringLength, "[%08X]", Operand->MemoryLarge.Value);
-		} break;
-		case 4:
-		{
-			StringLength = sprintf(Buffer + StringLength, "[%016llX]", Operand->MemoryLarge.Value);
+			StringLength = sprintf(Buffer + StringLength, "Rel %c %08X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
 		}
 	} break;
@@ -169,7 +225,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* BehaviourToString[] = { "Add", "Or", "Adc", "Sbb", "And", "Sub", "Xor", "Cmp", "Push", "Pop", "Movsxd", "Imul" };
+	const char* BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg" };
 
 	char Buffer[0x100];
 	char* RunBuffer;
