@@ -36,7 +36,30 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Jmp,
 	InstructionBehaviour_Test,
 	InstructionBehaviour_Xchg,
-	InstructionBehaviour_Mov
+	InstructionBehaviour_Mov,
+	InstructionBehaviour_Lea,
+	InstructionBehaviour_Nop,
+	InstructionBehaviour_Fwait,
+	InstructionBehaviour_Pushf,
+	InstructionBehaviour_Popf,
+	InstructionBehaviour_Sahf,
+	InstructionBehaviour_Lahf,
+	InstructionBehaviour_Movs,
+	InstructionBehaviour_Cmps,
+	InstructionBehaviour_Stos,
+	InstructionBehaviour_Lods,
+	InstructionBehaviour_Scas,
+	InstructionBehaviour_Rol,
+	InstructionBehaviour_Ror,
+	InstructionBehaviour_Rcl,
+	InstructionBehaviour_Rcr,
+	InstructionBehaviour_Shl,
+	InstructionBehaviour_Shr,
+	InstructionBehaviour_Sar,
+	InstructionBehaviour_Ret,
+	InstructionBehaviour_Enter,
+	InstructionBehaviour_Leave,
+	InstructionBehaviour_Int
 } InstructionBehaviour, *PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -159,7 +182,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		} 
 
 		if (Operand->Memory.Segment)
-			StringLength += sprintf(Buffer, "S%u:", Operand->Memory.Segment - 1);
+			StringLength += sprintf(Buffer + StringLength, "S%u:", Operand->Memory.Segment - 1);
 
 		*(Buffer + StringLength) = '[';
 		StringLength++;
@@ -200,7 +223,29 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	} break;
 	case OperandType_ML:
 	{
-		StringLength = sprintf(Buffer + StringLength, "[%016llX]", Operand->MemoryLarge.Value);
+		StringLength = 0;
+
+		switch (Operand->OperandSize)
+		{
+		case OperandSize_8:
+		{
+			StringLength = sprintf(Buffer, "byte ptr ");
+		} break;
+		case OperandSize_16:
+		{
+			StringLength = sprintf(Buffer, "word ptr ");
+		} break;
+		case OperandSize_32:
+		{
+			StringLength = sprintf(Buffer, "dword ptr ");
+		} break;
+		case OperandSize_64:
+		{
+			StringLength = sprintf(Buffer, "qword ptr ");
+		} break;
+		}
+
+		StringLength += sprintf(Buffer + StringLength, "[%016llX]", Operand->MemoryLarge.Value);
 	} break;
 	case OperandType_Rel:
 	{
@@ -233,7 +278,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov" };
+	const char* BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int" };
 
 	char Buffer[0x100];
 	char* RunBuffer;
