@@ -59,7 +59,49 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Ret,
 	InstructionBehaviour_Enter,
 	InstructionBehaviour_Leave,
-	InstructionBehaviour_Int
+	InstructionBehaviour_Int,
+	InstructionBehaviour_Iret,
+	InstructionBehaviour_Xlat,
+	InstructionBehaviour_Fadd,
+	InstructionBehaviour_Fmul,
+	InstructionBehaviour_Fcom,
+	InstructionBehaviour_Fcomp,
+	InstructionBehaviour_Fsub,
+	InstructionBehaviour_Fsubr,
+	InstructionBehaviour_Fdiv,
+	InstructionBehaviour_Fdivr,
+	InstructionBehaviour_Fld,
+	InstructionBehaviour_Fxch,
+	InstructionBehaviour_Fst,
+	InstructionBehaviour_Fstp,
+	InstructionBehaviour_Fnop,
+	InstructionBehaviour_Fldenv,
+	InstructionBehaviour_Fchs,
+	InstructionBehaviour_Fabs,
+	InstructionBehaviour_Ftst,
+	InstructionBehaviour_Fxam,
+	InstructionBehaviour_Fldcw,
+	InstructionBehaviour_Fld1,
+	InstructionBehaviour_Fldl2t,
+	InstructionBehaviour_Fldl2e,
+	InstructionBehaviour_Fldpi,
+	InstructionBehaviour_Fldlg2,
+	InstructionBehaviour_Fldln2,
+	InstructionBehaviour_Fldz,
+	InstructionBehaviour_Cbw,
+	InstructionBehaviour_Cwd,
+	InstructionBehaviour_Cdq,
+	InstructionBehaviour_Cqo,
+	InstructionBehaviour_Fnstenv,
+	InstructionBehaviour_Fstenv,
+	InstructionBehaviour_F2xm1,
+	InstructionBehaviour_Fxl2x,
+	InstructionBehaviour_Fptan,
+	InstructionBehaviour_Fpatan,
+	InstructionBehaviour_Fxtract,
+	InstructionBehaviour_Fprem1,
+	InstructionBehaviour_Fdecstp,
+	InstructionBehaviour_Fincstp,
 } InstructionBehaviour, *PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -67,19 +109,27 @@ typedef enum _OperandType
 	OperandType_None,
 	OperandType_SR,	// Segment register
 	OperandType_IR,	// Integer register
+	OperandType_FR, // Floating register
 	OperandType_M,	// Memory
 	OperandType_ML,	// Memory large
 	OperandType_V,	// Value
 	OperandType_Rel // Relative value
 } OperandType, *POperandType;
 
-typedef enum _OperandSize
+typedef enum _OperationType
 {
-	OperandSize_8,
-	OperandSize_16,
-	OperandSize_32,
-	OperandSize_64
-} OperandSize, *POperandSize;
+	OperationType_Normal,
+	OperationType_OperandLess
+} OperationType, *POperationType;
+
+typedef enum _OperationSize
+{
+	OperationSize_None,
+	OperationSize_8,
+	OperationSize_16,
+	OperationSize_32,
+	OperationSize_64
+} OperationSize, *POperationSize;
 
 typedef enum _MemoryOffsetSize
 {
@@ -91,7 +141,7 @@ typedef enum _MemoryOffsetSize
 typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for relativity
 {
 	OperandType Type;
-	OperandSize OperandSize;
+	OperationSize OperandSize;
 	union
 	{
 		struct
@@ -134,8 +184,20 @@ typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for rel
 
 typedef struct _Operation
 {
+	OperationType Type;
 	InstructionBehaviour Behaviour;
-	Operand Operands[4];
+	union
+	{
+		struct
+		{
+			Operand Operands[4];
+		} N;
+
+		struct
+		{
+			OperationSize OperationSize;
+		} OL;
+	};
 } Operation, *POperation;
 
 static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Length)
@@ -151,11 +213,15 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	{
 	case OperandType_IR:
 	{
-		StringLength = sprintf(Buffer, "R%u%c", Operand->Register.Register - 1, !Operand->OperandSize ? HighLowSuffix[Operand->Register.HighLowPart] : SizeSuffix[Operand->OperandSize]) - (SizeSuffix[Operand->OperandSize] ? 0 : 1);
+		StringLength = sprintf(Buffer, "R%u%c", Operand->Register.Register - 1, (Operand->OperandSize == OperationSize_8) ? HighLowSuffix[Operand->Register.HighLowPart] : SizeSuffix[Operand->OperandSize - 1]) - (SizeSuffix[Operand->OperandSize - 1] ? 0 : 1);
 	} break;
 	case OperandType_SR:
 	{
 		StringLength = sprintf(Buffer, "S%u", Operand->Register.Register - 1);
+	} break;
+	case OperandType_FR:
+	{
+		StringLength = sprintf(Buffer, "F%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_M:
 	{
@@ -163,19 +229,19 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 		switch (Operand->OperandSize)
 		{
-		case OperandSize_8:
+		case OperationSize_8:
 		{
 			StringLength = sprintf(Buffer, "byte ptr ");
 		} break;
-		case OperandSize_16:
+		case OperationSize_16:
 		{
 			StringLength = sprintf(Buffer, "word ptr ");
 		} break;
-		case OperandSize_32:
+		case OperationSize_32:
 		{
 			StringLength = sprintf(Buffer, "dword ptr ");
 		} break;
-		case OperandSize_64:
+		case OperationSize_64:
 		{
 			StringLength = sprintf(Buffer, "qword ptr ");
 		} break;
@@ -227,19 +293,19 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 		switch (Operand->OperandSize)
 		{
-		case OperandSize_8:
+		case OperationSize_8:
 		{
 			StringLength = sprintf(Buffer, "byte ptr ");
 		} break;
-		case OperandSize_16:
+		case OperationSize_16:
 		{
 			StringLength = sprintf(Buffer, "word ptr ");
 		} break;
-		case OperandSize_32:
+		case OperationSize_32:
 		{
 			StringLength = sprintf(Buffer, "dword ptr ");
 		} break;
-		case OperandSize_64:
+		case OperationSize_64:
 		{
 			StringLength = sprintf(Buffer, "qword ptr ");
 		} break;
@@ -252,15 +318,15 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		StringLength = 0;
 		switch (Operand->OperandSize)
 		{
-		case OperandSize_8:
+		case OperationSize_8:
 		{
 			StringLength = sprintf(Buffer + StringLength, "Rel %c %02X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
-		case OperandSize_16:
+		case OperationSize_16:
 		{
 			StringLength = sprintf(Buffer + StringLength, "Rel %c %04X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
-		case OperandSize_32:
+		case OperationSize_32:
 		{
 			StringLength = sprintf(Buffer + StringLength, "Rel %c %08X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
@@ -278,7 +344,8 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int" };
+	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp" };
+	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
 	char* RunBuffer;
@@ -291,17 +358,23 @@ static void Visualize(Operation* Operations, unsigned long OperationCount)
 			continue;
 		}
 
+		if (Operations->Type == OperationType_OperandLess)
+		{
+			printf("%s%c\n", BehaviourToString[Operations->Behaviour - 1], OperationSizeToChar[Operations->OL.OperationSize]);
+			continue;
+		}
+
 		RunBuffer = Buffer;
 
 		RunBuffer += sprintf(RunBuffer, "%s ", BehaviourToString[Operations->Behaviour - 1]);
-		for (unsigned long i = 0; Operations->Operands[i].Type && i < (sizeof(Operations->Operands) / sizeof(Operations->Operands[0])); i++)
+		for (unsigned long i = 0; Operations->N.Operands[i].Type && i < (sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])); i++)
 		{
 			unsigned long Length;
 
-			VizualizeOperand(&Operations->Operands[i], RunBuffer, &Length);
+			VizualizeOperand(&Operations->N.Operands[i], RunBuffer, &Length);
 			RunBuffer += Length;
 
-			if (i < ((sizeof(Operations->Operands) / sizeof(Operations->Operands[0])) - 1) && Operations->Operands[i + 1].Type)
+			if (i < ((sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])) - 1) && Operations->N.Operands[i + 1].Type)
 			{
 				memcpy(RunBuffer, ", ", sizeof(", "));
 				RunBuffer += sizeof(", ") - 1;
