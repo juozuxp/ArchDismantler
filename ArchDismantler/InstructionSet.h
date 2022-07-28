@@ -95,13 +95,50 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Fnstenv,
 	InstructionBehaviour_Fstenv,
 	InstructionBehaviour_F2xm1,
-	InstructionBehaviour_Fxl2x,
+	InstructionBehaviour_Fyl2x,
 	InstructionBehaviour_Fptan,
 	InstructionBehaviour_Fpatan,
 	InstructionBehaviour_Fxtract,
 	InstructionBehaviour_Fprem1,
 	InstructionBehaviour_Fdecstp,
 	InstructionBehaviour_Fincstp,
+	InstructionBehaviour_Fnstcw,
+	InstructionBehaviour_Fstcw,
+	InstructionBehaviour_Fprem,
+	InstructionBehaviour_Fyl2xp1,
+	InstructionBehaviour_Fsqrt,
+	InstructionBehaviour_Fsincos,
+	InstructionBehaviour_Frndint,
+	InstructionBehaviour_Fscale,
+	InstructionBehaviour_Fsin,
+	InstructionBehaviour_Fcos,
+	InstructionBehaviour_Fiadd,
+	InstructionBehaviour_Fcmovb,
+	InstructionBehaviour_Fimul,
+	InstructionBehaviour_Fcmove,
+	InstructionBehaviour_Ficom,
+	InstructionBehaviour_Fcmovbe,
+	InstructionBehaviour_Ficomp,
+	InstructionBehaviour_Fcmovu,
+	InstructionBehaviour_Fisub,
+	InstructionBehaviour_Fisubr,
+	InstructionBehaviour_Fucompp,
+	InstructionBehaviour_Fidiv,
+	InstructionBehaviour_Fidivr,
+	InstructionBehaviour_Fild,
+	InstructionBehaviour_Fcmovnb,
+	InstructionBehaviour_Fisttp,
+	InstructionBehaviour_Fcmovne,
+	InstructionBehaviour_Fist,
+	InstructionBehaviour_Fcmovnbe,
+	InstructionBehaviour_Fistp,
+	InstructionBehaviour_Fcmovnu,
+	InstructionBehaviour_Fnclex,
+	InstructionBehaviour_Fclex,
+	InstructionBehaviour_Fninit,
+	InstructionBehaviour_Finit,
+	InstructionBehaviour_Fucomi,
+	InstructionBehaviour_Fcomi,
 } InstructionBehaviour, *PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -344,7 +381,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp" };
+	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr" };
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
