@@ -66,14 +66,8 @@ typedef struct _x86_x64Operand
 		unsigned char O16 : 1;
 		unsigned char O32 : 1;
 		unsigned char O64 : 1;
-
-		struct
-		{
-			unsigned char MO8 : 1;  // Operation modes not allowed for M from 8 bit to 64 bit
-			unsigned char MO16 : 1;
-			unsigned char MO32 : 1;
-			unsigned char MO64 : 1;
-		};
+		unsigned char O80 : 1;
+		unsigned char O128 : 1;
 
 		union
 		{
@@ -97,7 +91,7 @@ typedef union _x86_x64IndexablePrefixes
 		unsigned char WAIT : 1;
 		unsigned char WORD : 1;
 	};
-} x86_x64IndexablePrefixes, *Px86_x64IndexablePrefixes;
+} x86_x64IndexablePrefixes, * Px86_x64IndexablePrefixes;
 
 typedef union _x86_x64PrefixMap
 {
@@ -212,6 +206,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 {
 	unsigned long AllocationArrow;
 
+	x86_x64Instruction* L4SubSet; // dreadful stuff, basically everything gets redirected
 	x86_x64Instruction* L3SubSet;
 	x86_x64Instruction* L2SubSet;
 	x86_x64Instruction* BaseSet;
@@ -1564,20 +1559,41 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	BaseSet[0x8B].N.Operands[1].O64 = 1;
 	BaseSet[0x8B].N.Operands[1].Type = x86_x64OperandType_M;
 
-	BaseSet[0x8C].Type = x86_x64InstructionType_Normal;
-	BaseSet[0x8C].Behaviour = InstructionBehaviour_Mov;
+	BaseSet[0x8C].Type = x86_x64InstructionType_GlobalRedirect;
 
-	BaseSet[0x8C].N.Operands[0].IM = 1;
-	BaseSet[0x8C].N.Operands[0].O16 = 1;
-	BaseSet[0x8C].N.Operands[0].O32 = 1;
-	BaseSet[0x8C].N.Operands[0].O64 = 1;
-	BaseSet[0x8C].N.Operands[0].MO32 = 1;
-	BaseSet[0x8C].N.Operands[0].MO64 = 1;
-	BaseSet[0x8C].N.Operands[0].Type = x86_x64OperandType_M;
+	SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
 
-	BaseSet[0x8C].N.Operands[1].O16 = 1;
-	BaseSet[0x8C].N.Operands[1].Type = x86_x64OperandType_R;
-	BaseSet[0x8C].N.Operands[1].RType = x86_x64RegisterType_Segment;
+	BaseSet[0x8C].RG.A0 = 1;
+	BaseSet[0x8C].RG.A3 = 1;
+
+	BaseSet[0x8C].RG.H0 = 1;
+	BaseSet[0x8C].RG.H3 = 1;
+
+	BaseSet[0x8C].R.Index = INDEX_BUFFER(&BaseSet[0x8C], SubSet);
+
+	SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	SubSet[0x00].Behaviour = InstructionBehaviour_Mov;
+
+	SubSet[0x00].N.Operands[0].IM = 1;
+	SubSet[0x00].N.Operands[0].O16 = 1;
+	SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
+
+	SubSet[0x00].N.Operands[1].O16 = 1;
+	SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_R;
+	SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_Segment;
+
+	SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	SubSet[0x01].Behaviour = InstructionBehaviour_Mov;
+
+	SubSet[0x01].N.Operands[0].IM = 1;
+	SubSet[0x01].N.Operands[0].O16 = 1;
+	SubSet[0x01].N.Operands[0].O32 = 1;
+	SubSet[0x01].N.Operands[0].O64 = 1;
+	SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_M;
+
+	SubSet[0x01].N.Operands[1].O16 = 1;
+	SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_R;
+	SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_Segment;
 
 	BaseSet[0x8D].Type = x86_x64InstructionType_Normal;
 	BaseSet[0x8D].Behaviour = InstructionBehaviour_Lea;
@@ -1591,13 +1607,8 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 1);
 
 	BaseSet[0x8D].RG.A0 = 1;
-	BaseSet[0x8D].RG.A1 = 0;
-	BaseSet[0x8D].RG.A2 = 0;
-	BaseSet[0x8D].RG.A3 = 0;
 
 	BaseSet[0x8D].RG.H0 = 1;
-	BaseSet[0x8D].RG.H1 = 0;
-	BaseSet[0x8D].RG.H2 = 0;
 	BaseSet[0x8D].RG.H3 = 1;
 
 	BaseSet[0x8D].R.Index = INDEX_BUFFER(&BaseSet[0x8D], SubSet);
@@ -3883,6 +3894,453 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer)
 	BaseSet[0xDB].R.A7 = 1;
 
 	BaseSet[0xDB].R.Index = INDEX_BUFFER(&BaseSet[0xDB], SubSet);
+
+	SubSet[0x00].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x00].RG.A0 = 1;
+	SubSet[0x00].RG.A3 = 1;
+
+	SubSet[0x00].RG.H0 = 1;
+	SubSet[0x00].RG.H3 = 1;
+
+	SubSet[0x00].RG.Index = INDEX_BUFFER(&SubSet[0x00], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fild;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O32 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fcmovnb;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O32 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x01].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x01].RG.A0 = 1;
+	SubSet[0x01].RG.A3 = 1;
+
+	SubSet[0x01].RG.H0 = 1;
+	SubSet[0x01].RG.H3 = 1;
+
+	SubSet[0x01].RG.Index = INDEX_BUFFER(&SubSet[0x01], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fisttp;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O32 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fcmovne;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O32 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x02].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x02].RG.A0 = 1;
+	SubSet[0x02].RG.A3 = 1;
+
+	SubSet[0x02].RG.H0 = 1;
+	SubSet[0x02].RG.H3 = 1;
+
+	SubSet[0x02].RG.Index = INDEX_BUFFER(&SubSet[0x02], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fist;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O32 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fcmovnbe;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O32 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x03].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x03].RG.A0 = 1;
+	SubSet[0x03].RG.A3 = 1;
+
+	SubSet[0x03].RG.H0 = 1;
+	SubSet[0x03].RG.H3 = 1;
+
+	SubSet[0x03].RG.Index = INDEX_BUFFER(&SubSet[0x03], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fistp;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O32 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fcmovnu;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O32 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x04].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 1);
+
+	SubSet[0x04].RG.A3 = 1;
+
+	SubSet[0x04].RG.H0 = 1;
+	SubSet[0x04].RG.H1 = 1;
+	SubSet[0x04].RG.H2 = 1;
+	SubSet[0x04].RG.H3 = 1;
+
+	SubSet[0x04].RG.Index = INDEX_BUFFER(&SubSet[0x04], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_LowerRedirect;
+
+	L3SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	L2SubSet[0x00].R.A2 = 1;
+	L2SubSet[0x00].R.A3 = 1;
+
+	L2SubSet[0x00].RG.Index = INDEX_BUFFER(&L2SubSet[0x00], L3SubSet);
+
+	L3SubSet[0x00].Type = x86_x64InstructionType_PrefixRedirect;
+
+	L4SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	L3SubSet[0x00].RP.A1 = 1;
+	L3SubSet[0x00].RP.DC = 1;
+
+	L3SubSet[0x00].RG.Index = INDEX_BUFFER(&L3SubSet[0x00], L4SubSet);
+
+	L4SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L4SubSet[0x00].Behaviour = InstructionBehaviour_Fclex;
+
+	L4SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L4SubSet[0x01].Behaviour = InstructionBehaviour_Fnclex;
+
+	L3SubSet[0x01].Type = x86_x64InstructionType_PrefixRedirect;
+
+	L4SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	L3SubSet[0x01].RP.A1 = 1;
+	L3SubSet[0x01].RP.DC = 1;
+
+	L3SubSet[0x01].RG.Index = INDEX_BUFFER(&L3SubSet[0x01], L4SubSet);
+
+	L4SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L4SubSet[0x00].Behaviour = InstructionBehaviour_Finit;
+
+	L4SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L4SubSet[0x01].Behaviour = InstructionBehaviour_Fninit;
+
+	SubSet[0x05].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x05].RG.A0 = 1;
+	SubSet[0x05].RG.A3 = 1;
+
+	SubSet[0x05].RG.H0 = 1;
+	SubSet[0x05].RG.H3 = 1;
+
+	SubSet[0x05].RG.Index = INDEX_BUFFER(&SubSet[0x05], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fld;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O80 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fucomi;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O32 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x06].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 1);
+
+	SubSet[0x06].RG.A3 = 1;
+
+	SubSet[0x06].RG.H0 = 1;
+	SubSet[0x06].RG.H1 = 1;
+	SubSet[0x06].RG.H2 = 1;
+	SubSet[0x06].RG.H3 = 1;
+
+	SubSet[0x06].RG.Index = INDEX_BUFFER(&SubSet[0x06], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fcomi;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O32 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x07].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 1);
+
+	SubSet[0x07].RG.A0 = 1;
+
+	SubSet[0x07].RG.H0 = 1;
+	SubSet[0x07].RG.H3 = 1;
+
+	SubSet[0x07].RG.Index = INDEX_BUFFER(&SubSet[0x07], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fstp;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O80 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O32 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	BaseSet[0xDC].Type = x86_x64InstructionType_UpperRedirect;
+
+	SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 8);
+
+	BaseSet[0xDC].R.A0 = 1;
+	BaseSet[0xDC].R.A1 = 1;
+	BaseSet[0xDC].R.A2 = 1;
+	BaseSet[0xDC].R.A3 = 1;
+	BaseSet[0xDC].R.A4 = 1;
+	BaseSet[0xDC].R.A5 = 1;
+	BaseSet[0xDC].R.A6 = 1;
+	BaseSet[0xDC].R.A7 = 1;
+
+	BaseSet[0xDC].R.Index = INDEX_BUFFER(&BaseSet[0xDC], SubSet);
+
+	SubSet[0x00].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x00].RG.A0 = 1;
+	SubSet[0x00].RG.A3 = 1;
+
+	SubSet[0x00].RG.H0 = 1;
+	SubSet[0x00].RG.H3 = 1;
+
+	SubSet[0x00].RG.Index = INDEX_BUFFER(&SubSet[0x00], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fadd;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O64 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fadd;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O64 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x01].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x01].RG.A0 = 1;
+	SubSet[0x01].RG.A3 = 1;
+
+	SubSet[0x01].RG.H0 = 1;
+	SubSet[0x01].RG.H3 = 1;
+
+	SubSet[0x01].RG.Index = INDEX_BUFFER(&SubSet[0x01], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fmul;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O64 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fmul;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O32 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O64 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x02].Type = x86_x64InstructionType_Normal;
+	SubSet[0x02].Behaviour = InstructionBehaviour_Fcom;
+
+	SubSet[0x02].N.Operands[0].IM = 1;
+	SubSet[0x02].N.Operands[0].O32 = 1;
+	SubSet[0x02].N.Operands[0].Type = x86_x64OperandType_AX;
+	SubSet[0x02].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x02].N.Operands[1].IM = 1;
+	SubSet[0x02].N.Operands[1].O64 = 1;
+	SubSet[0x02].N.Operands[1].Type = x86_x64OperandType_M;
+	SubSet[0x02].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x03].Type = x86_x64InstructionType_Normal;
+	SubSet[0x03].Behaviour = InstructionBehaviour_Fcomp;
+
+	SubSet[0x03].N.Operands[0].IM = 1;
+	SubSet[0x03].N.Operands[0].O32 = 1;
+	SubSet[0x03].N.Operands[0].Type = x86_x64OperandType_AX;
+	SubSet[0x03].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x03].N.Operands[1].IM = 1;
+	SubSet[0x03].N.Operands[1].O64 = 1;
+	SubSet[0x03].N.Operands[1].Type = x86_x64OperandType_M;
+	SubSet[0x03].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	SubSet[0x04].Type = x86_x64InstructionType_GlobalRedirect;
+
+	L2SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	SubSet[0x04].RG.A0 = 1;
+	SubSet[0x04].RG.A3 = 1;
+
+	SubSet[0x04].RG.H0 = 1;
+	SubSet[0x04].RG.H3 = 1;
+
+	SubSet[0x04].RG.Index = INDEX_BUFFER(&SubSet[0x04], L2SubSet);
+
+	L2SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x00].Behaviour = InstructionBehaviour_Fsub;
+
+	L2SubSet[0x00].N.Operands[0].IM = 1;
+	L2SubSet[0x00].N.Operands[0].O32 = 1;
+	L2SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_AX;
+	L2SubSet[0x00].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x00].N.Operands[1].IM = 1;
+	L2SubSet[0x00].N.Operands[1].O64 = 1;
+	L2SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_M;
+	L2SubSet[0x00].N.Operands[1].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	L2SubSet[0x01].Behaviour = InstructionBehaviour_Fsubr;
+
+	L2SubSet[0x01].N.Operands[0].IM = 1;
+	L2SubSet[0x01].N.Operands[0].O64 = 1;
+	L2SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_M;
+	L2SubSet[0x01].N.Operands[0].RType = x86_x64RegisterType_StackTop;
+
+	L2SubSet[0x01].N.Operands[1].IM = 1;
+	L2SubSet[0x01].N.Operands[1].O32 = 1;
+	L2SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_AX;
+	L2SubSet[0x01].N.Operands[1].RType = x86_x64RegisterType_StackTop;
 }
 
 static unsigned char CountBits(unsigned long Value, unsigned char From, unsigned char To)
@@ -3934,7 +4392,6 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 
 	unsigned char RedirectedViaOpByte;
 	unsigned char InstructionPrefix;
-	unsigned char MemoryToRegister;
 
 	unsigned char OperandByte;
 	unsigned char MainOperand;
@@ -3942,7 +4399,6 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 	PrefixMap.Value = 0;
 	IndexPrefixMap.Value = 0;
 
-	MemoryToRegister = 0;
 	InstructionPrefix = 0;
 	RedirectedViaOpByte = 0;
 
@@ -4120,6 +4576,36 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 
 		OperationBuffer->Type = OperationType_Normal;
 
+		for (unsigned char i = 0; i < 4; i++)
+		{
+			if (!Instruction->N.Operands[i].Type)
+				break;
+
+			if (Instruction->N.Operands[i].O8) // Establish default size
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_8;
+
+			else if (Instruction->N.Operands[i].O32)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_32;
+
+			else if (Instruction->N.Operands[i].O64)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_64;
+
+			else if (Instruction->N.Operands[i].O16)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_16;
+
+			else if (Instruction->N.Operands[i].O80)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_80;
+
+			else if (Instruction->N.Operands[i].O128)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_128;
+
+			if (Instruction->N.Operands[i].O64 && PrefixMap.REXW)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_64;
+
+			else if (Instruction->N.Operands[i].O16 && PrefixMap.WORD)
+				OperationBuffer->N.Operands[i].OperandSize = OperationSize_16;
+		}
+
 		MainOperand = 5;
 		if (Instruction->N.Operands[0].Type == x86_x64OperandType_M)
 			MainOperand = 0;
@@ -4139,7 +4625,7 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 			if (OperandByte >> 6 == 3) // Operation register to register
 			{
 				OperationBuffer->N.Operands[MainOperand].Type = RegisterTypeMap[Instruction->N.Operands[MainOperand].RType];
-				if (PrefixMap.REX)
+				if (PrefixMap.REX || OperationBuffer->N.Operands[!MainOperand].OperandSize != OperationSize_8)
 				{
 					OperationBuffer->N.Operands[MainOperand].Register.HighLowPart = 0;
 					OperationBuffer->N.Operands[MainOperand].Register.Register = (OperandByte & ((1 << 3) - 1)) + (PrefixMap.REXB && !Instruction->N.Operands[MainOperand].IM ? 8 : 0) + 1;
@@ -4258,7 +4744,7 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 			if (Instruction->N.Operands[!MainOperand].Type == x86_x64OperandType_R)
 			{
 				OperationBuffer->N.Operands[!MainOperand].Type = RegisterTypeMap[Instruction->N.Operands[!MainOperand].RType];
-				if (PrefixMap.REX)
+				if (PrefixMap.REX || OperationBuffer->N.Operands[!MainOperand].OperandSize != OperationSize_8)
 				{
 					OperationBuffer->N.Operands[!MainOperand].Register.HighLowPart = 0;
 					OperationBuffer->N.Operands[!MainOperand].Register.Register = ((OperandByte >> 3) & ((1 << 3) - 1)) + (PrefixMap.REXR && !Instruction->N.Operands[!MainOperand].IM ? 8 : 0) + 1;
@@ -4275,53 +4761,6 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 		{
 			if (!Instruction->N.Operands[i].Type)
 				break;
-
-			if (Instruction->N.Operands[i].Type == x86_x64OperandType_M && !MemoryToRegister)
-			{
-				if (Instruction->N.Operands[i].O8 && !Instruction->N.Operands[i].MO8) // Establish default size
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_8;
-
-				else if (Instruction->N.Operands[i].O32 && !Instruction->N.Operands[i].MO32)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_32;
-
-				else if (Instruction->N.Operands[i].O64 && !Instruction->N.Operands[i].MO64)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_64;
-
-				else if (Instruction->N.Operands[i].O16 && !Instruction->N.Operands[i].MO16)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_16;
-
-				/*else
-					OperationBuffer->Behaviour = InstructionBehaviour_Invalid;*/
-
-				if (Instruction->N.Operands[i].O64 && PrefixMap.REXW && !Instruction->N.Operands[i].MO64)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_64;
-
-				else if (Instruction->N.Operands[i].O16 && PrefixMap.WORD && !Instruction->N.Operands[i].MO16)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_16;
-			}
-			else
-			{
-				if (Instruction->N.Operands[i].O8) // Establish default size
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_8;
-
-				else if (Instruction->N.Operands[i].O32)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_32;
-
-				else if (Instruction->N.Operands[i].O64)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_64;
-
-				else if (Instruction->N.Operands[i].O16)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_16;
-
-				else
-					OperationBuffer->Behaviour = InstructionBehaviour_Invalid;
-
-				if (Instruction->N.Operands[i].O64 && PrefixMap.REXW)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_64;
-
-				else if (Instruction->N.Operands[i].O16 && PrefixMap.WORD)
-					OperationBuffer->N.Operands[i].OperandSize = OperationSize_16;
-			}
 
 			switch (Instruction->N.Operands[i].Type)
 			{
@@ -4416,7 +4855,7 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 					else
 					{
 						OperationBuffer->N.Operands[i].Type = RegisterTypeMap[Instruction->N.Operands[i].RType];
-						if (PrefixMap.REX && !Instruction->N.Operands[i].IM)
+						if ((PrefixMap.REX && !Instruction->N.Operands[i].IM) || OperationBuffer->N.Operands[i].OperandSize != OperationSize_8)
 						{
 							OperationBuffer->N.Operands[i].Register.Register = (Instruction->N.Operands[i].Type - x86_x64OperandType_AX) + (PrefixMap.REXB ? 8 : 0) + 1;
 							OperationBuffer->N.Operands[i].Register.HighLowPart = 0;
@@ -4441,7 +4880,6 @@ static void ParseCode(x86_x64Instruction* SetBuffer, void* Code, unsigned long l
 		PrefixMap.Value = 0;
 		IndexPrefixMap.Value = 0;
 
-		MemoryToRegister = 0;
 		InstructionPrefix = 0;
 		RedirectedViaOpByte = 0;
 	}

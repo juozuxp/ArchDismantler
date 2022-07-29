@@ -10,7 +10,7 @@ int main()
 	unsigned char Operations[0x1000];
 	unsigned char Buffer[0x4000];
 
-	unsigned char Code[] = { 0xDA, 0x30  /*0xCD, 0x5B, 0x07*/ /*, 0xC1, 0x00, 0x00*/ };
+	unsigned char Code[] = { 0x9B, 0xDC, 0xE7  /*0xCD, 0x5B, 0x07*/ /*, 0xC1, 0x00, 0x00*/ };
 
 	ConstructInstructionSet((x86_x64Instruction*)&Buffer);
 	ParseCode((x86_x64Instruction*)Buffer, Code, sizeof(Code), (Operation*)Operations, &OperationCount);

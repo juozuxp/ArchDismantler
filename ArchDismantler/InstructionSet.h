@@ -165,7 +165,9 @@ typedef enum _OperationSize
 	OperationSize_8,
 	OperationSize_16,
 	OperationSize_32,
-	OperationSize_64
+	OperationSize_64,
+	OperationSize_80,
+	OperationSize_128,
 } OperationSize, *POperationSize;
 
 typedef enum _MemoryOffsetSize
@@ -282,6 +284,14 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		{
 			StringLength = sprintf(Buffer, "qword ptr ");
 		} break;
+		case OperationSize_80:
+		{
+			StringLength = sprintf(Buffer, "tword ptr ");
+		} break;
+		case OperationSize_128:
+		{
+			StringLength = sprintf(Buffer, "oword ptr ");
+		} break;
 		} 
 
 		if (Operand->Memory.Segment)
@@ -346,6 +356,14 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		{
 			StringLength = sprintf(Buffer, "qword ptr ");
 		} break;
+		case OperationSize_80:
+		{
+			StringLength = sprintf(Buffer, "tword ptr ");
+		} break;
+		case OperationSize_128:
+		{
+			StringLength = sprintf(Buffer, "oword ptr ");
+		} break;
 		}
 
 		StringLength += sprintf(Buffer + StringLength, "[%016llX]", Operand->MemoryLarge.Value);
@@ -381,7 +399,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr" };
+	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi" };
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
