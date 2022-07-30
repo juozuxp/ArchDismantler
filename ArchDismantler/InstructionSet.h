@@ -165,7 +165,23 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_In,
 	InstructionBehaviour_Out,
 	InstructionBehaviour_Call,
-} InstructionBehaviour, *PInstructionBehaviour;
+	InstructionBehaviour_Icebp,
+	InstructionBehaviour_Hlt,
+	InstructionBehaviour_Cmc,
+	InstructionBehaviour_Not,
+	InstructionBehaviour_Neg,
+	InstructionBehaviour_Mul,
+	InstructionBehaviour_Div,
+	InstructionBehaviour_Idiv,
+	InstructionBehaviour_Clc,
+	InstructionBehaviour_Stc,
+	InstructionBehaviour_Cli,
+	InstructionBehaviour_Sti,
+	InstructionBehaviour_Cld,
+	InstructionBehaviour_Std,
+	InstructionBehaviour_Inc,
+	InstructionBehaviour_Dec,
+} InstructionBehaviour, * PInstructionBehaviour;
 
 typedef enum _OperandType
 {
@@ -177,15 +193,16 @@ typedef enum _OperandType
 	OperandType_ML,	// Memory large
 	OperandType_V,	// Value
 	OperandType_Rel // Relative value
-} OperandType, *POperandType;
+} OperandType, * POperandType;
 
 typedef enum _OperationType
 {
 	OperationType_Normal,
+	OperationType_Locked,
 	OperationType_RepeatZ,
 	OperationType_RepeatNotZ,
 	OperationType_OperandLess
-} OperationType, *POperationType;
+} OperationType, * POperationType;
 
 typedef enum _OperationSize
 {
@@ -196,7 +213,7 @@ typedef enum _OperationSize
 	OperationSize_64,
 	OperationSize_80,
 	OperationSize_128,
-} OperationSize, *POperationSize;
+} OperationSize, * POperationSize;
 
 typedef enum _MemoryOffsetSize
 {
@@ -247,7 +264,7 @@ typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for rel
 			long Value;
 		} RelValue;
 	};
-} Operand, *POperand;
+} Operand, * POperand;
 
 typedef struct _Operation
 {
@@ -265,7 +282,7 @@ typedef struct _Operation
 			OperationSize OperationSize;
 		} OL;
 	};
-} Operation, *POperation;
+} Operation, * POperation;
 
 static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Length)
 {
@@ -320,7 +337,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		{
 			StringLength = sprintf(Buffer, "oword ptr ");
 		} break;
-		} 
+		}
 
 		if (Operand->Memory.Segment)
 			StringLength += sprintf(Buffer + StringLength, "S%u:", Operand->Memory.Segment - 1);
@@ -427,7 +444,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call"};
+	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec" };
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
@@ -448,6 +465,21 @@ static void Visualize(Operation* Operations, unsigned long OperationCount)
 		}
 
 		RunBuffer = Buffer;
+		switch (Operations->Type)
+		{
+		case OperationType_RepeatZ:
+		{
+			RunBuffer += sprintf(RunBuffer, "repz ");
+		} break;
+		case OperationType_RepeatNotZ:
+		{
+			RunBuffer += sprintf(RunBuffer, "repnz ");
+		} break;
+		case OperationType_Locked:
+		{
+			RunBuffer += sprintf(RunBuffer, "lock ");
+		} break;
+		}
 
 		RunBuffer += sprintf(RunBuffer, "%s ", BehaviourToString[Operations->Behaviour - 1]);
 		for (unsigned long i = 0; Operations->N.Operands[i].Type && i < (sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])); i++)
