@@ -181,6 +181,55 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Std,
 	InstructionBehaviour_Inc,
 	InstructionBehaviour_Dec,
+	InstructionBehaviour_Sldt,
+	InstructionBehaviour_Str,
+	InstructionBehaviour_Lldt,
+	InstructionBehaviour_Ltr,
+	InstructionBehaviour_Verr,
+	InstructionBehaviour_Verw,
+	InstructionBehaviour_Sgdt,
+	InstructionBehaviour_Enclv,
+	InstructionBehaviour_Vmcall,
+	InstructionBehaviour_Vmlaunch,
+	InstructionBehaviour_Vmresume,
+	InstructionBehaviour_Vmxoff,
+	InstructionBehaviour_Pconfig,
+	InstructionBehaviour_Sidt,
+	InstructionBehaviour_Monitor,
+	InstructionBehaviour_Mwait,
+	InstructionBehaviour_Clac,
+	InstructionBehaviour_Stac,
+	InstructionBehaviour_Lgdt,
+	InstructionBehaviour_Xgetbv,
+	InstructionBehaviour_Xsetbv,
+	InstructionBehaviour_Vmfunc,
+	InstructionBehaviour_Xend,
+	InstructionBehaviour_Xtest,
+	InstructionBehaviour_Enclu,
+	InstructionBehaviour_Lidt,
+	InstructionBehaviour_Vmrun,
+	InstructionBehaviour_Vmmcall,
+	InstructionBehaviour_Vmload,
+	InstructionBehaviour_Vmsave,
+	InstructionBehaviour_Stgi,
+	InstructionBehaviour_Clgi,
+	InstructionBehaviour_Skinit,
+	InstructionBehaviour_Invlpga,
+	InstructionBehaviour_Smsw,
+	InstructionBehaviour_Serialize,
+	InstructionBehaviour_Rdpkru,
+	InstructionBehaviour_Wrpkru,
+	InstructionBehaviour_Lmsw,
+	InstructionBehaviour_Invlpg,
+	InstructionBehaviour_Swapgs,
+	InstructionBehaviour_Rdiscp,
+	InstructionBehaviour_Monitorx,
+	InstructionBehaviour_Mwaitx,
+	InstructionBehaviour_Clzero,
+	InstructionBehaviour_Rdpru,
+	InstructionBehaviour_Lar,
+	InstructionBehaviour_Lsl,
+	InstructionBehaviour_Syscall
 } InstructionBehaviour, * PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -348,7 +397,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		if (Operand->Memory.FirstRegister)
 		{
 			if (Operand->Memory.FirstRegister == (unsigned char)~0)
-				StringLength += sprintf(Buffer + StringLength, "Rel %c %X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
+				StringLength += sprintf(Buffer + StringLength, "Rel");
 			else
 				StringLength += sprintf(Buffer + StringLength, "R%u", Operand->Memory.FirstRegister - 1);
 		}
@@ -434,7 +483,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	} break;
 	case OperandType_V:
 	{
-		StringLength = sprintf(Buffer, "%llu", Operand->Value.Value);
+		StringLength = sprintf(Buffer, "%llX", Operand->Value.Value);
 	} break;
 	}
 
@@ -444,7 +493,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec" };
+	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall" };
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
