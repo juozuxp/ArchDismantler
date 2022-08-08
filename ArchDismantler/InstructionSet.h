@@ -564,10 +564,15 @@ typedef enum _MemoryOffsetSize
 	MemoryOffsetSize_32
 };
 
+#pragma pack(push, 1)
+
 typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for relativity
 {
-	OperandType Type;
-	OperationSize OperandSize;
+	struct
+	{
+		unsigned char Type : 4;
+		unsigned char OperandSize : 4;
+	};
 	union
 	{
 		struct
@@ -610,8 +615,11 @@ typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for rel
 
 typedef struct _Operation
 {
-	OperationType Type;
-	InstructionBehaviour Behaviour;
+	struct
+	{
+		unsigned short Type : 3;
+		unsigned short Behaviour : 13;
+	};
 	union
 	{
 		struct
@@ -625,6 +633,8 @@ typedef struct _Operation
 		} OL;
 	};
 } Operation, * POperation;
+
+#pragma pack(pop)
 
 static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Length)
 {

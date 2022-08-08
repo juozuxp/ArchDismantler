@@ -59,6 +59,8 @@ typedef enum _x86_x64InstructionType
 	x86_x64InstructionType_ExGlobalRedirect,
 } x86_x64InstructionType, * Px86_x64InstructionType;
 
+#pragma pack(push, 1)
+
 typedef struct _x86_x64Operand
 {
 	struct
@@ -221,3 +223,5 @@ typedef struct _x86_x64Instruction
 		} OL;
 	};
 } x86_x64Instruction, * Px86_x64Instruction;
+
+#pragma pack(pop)
