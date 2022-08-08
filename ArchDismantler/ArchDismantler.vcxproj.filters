@@ -26,5 +26,11 @@
     <ClInclude Include="x86_x64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="x86_x64Parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="x86_x64Base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

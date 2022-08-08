@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "x86_x64.h"
+#include "x86_x64Parser.h"
 #include <Windows.h>
 
 int main()

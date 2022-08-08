@@ -132,6 +132,8 @@
   <ItemGroup>
     <ClInclude Include="x86_x64.h" />
     <ClInclude Include="InstructionSet.h" />
+    <ClInclude Include="x86_x64Base.h" />
+    <ClInclude Include="x86_x64Parser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
