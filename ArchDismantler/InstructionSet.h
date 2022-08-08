@@ -396,7 +396,7 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Pshufd,
 	InstructionBehaviour_Psrlw,
 	InstructionBehaviour_Psraw,
-	InstructionBehaviour_Psliw,
+	InstructionBehaviour_Psllw,
 	InstructionBehaviour_Psrld,
 	InstructionBehaviour_Psrad,
 	InstructionBehaviour_Pslld,
@@ -404,6 +404,119 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Psrldq,
 	InstructionBehaviour_Psllq,
 	InstructionBehaviour_Pslldq,
+	InstructionBehaviour_Pcmpeqb,
+	InstructionBehaviour_Pcmpeqw,
+	InstructionBehaviour_Pcmpeqd,
+	InstructionBehaviour_Emms,
+	InstructionBehaviour_Vmread,
+	InstructionBehaviour_Vmwrite,
+	InstructionBehaviour_Haddpd,
+	InstructionBehaviour_Haddps,
+	InstructionBehaviour_Hsubpd,
+	InstructionBehaviour_Hsubps,
+	InstructionBehaviour_Seto,
+	InstructionBehaviour_Setno,
+	InstructionBehaviour_Setb,
+	InstructionBehaviour_Setae,
+	InstructionBehaviour_Sete,
+	InstructionBehaviour_Setne,
+	InstructionBehaviour_Setbe,
+	InstructionBehaviour_Seta,
+	InstructionBehaviour_Sets,
+	InstructionBehaviour_Setns,
+	InstructionBehaviour_Setp,
+	InstructionBehaviour_Setnp,
+	InstructionBehaviour_Setl,
+	InstructionBehaviour_Setge,
+	InstructionBehaviour_Setle,
+	InstructionBehaviour_Setg,
+	InstructionBehaviour_Cpuid,
+	InstructionBehaviour_Bt,
+	InstructionBehaviour_Shld,
+	InstructionBehaviour_Rsm,
+	InstructionBehaviour_Bts,
+	InstructionBehaviour_Shrd,
+	InstructionBehaviour_Fxsave,
+	InstructionBehaviour_Fxrstor,
+	InstructionBehaviour_Ldmxcsr,
+	InstructionBehaviour_Stmxcsr,
+	InstructionBehaviour_Xsave,
+	InstructionBehaviour_Lfence,
+	InstructionBehaviour_Xrstor,
+	InstructionBehaviour_Xsaveopt,
+	InstructionBehaviour_Mfence,
+	InstructionBehaviour_Sfence,
+	InstructionBehaviour_Clflush,
+	InstructionBehaviour_Cmpxchg,
+	InstructionBehaviour_Lss,
+	InstructionBehaviour_Btr,
+	InstructionBehaviour_Lfs,
+	InstructionBehaviour_Lgs,
+	InstructionBehaviour_Movzx,
+	InstructionBehaviour_Popcnt,
+	InstructionBehaviour_Btc,
+	InstructionBehaviour_Bsf,
+	InstructionBehaviour_Bsr,
+	InstructionBehaviour_Movsx,
+	InstructionBehaviour_Xadd,
+	InstructionBehaviour_Cmpps,
+	InstructionBehaviour_Cmpss,
+	InstructionBehaviour_Cmppd,
+	InstructionBehaviour_Cmpsd,
+	InstructionBehaviour_Movnti,
+	InstructionBehaviour_Pinsrw,
+	InstructionBehaviour_Shufps,
+	InstructionBehaviour_Shufpd,
+	InstructionBehaviour_Vmptrld,
+	InstructionBehaviour_Vmclear,
+	InstructionBehaviour_Vmxon,
+	InstructionBehaviour_Vmptrst,
+	InstructionBehaviour_Bswap,
+	InstructionBehaviour_Addsubpd,
+	InstructionBehaviour_Addsubps,
+	InstructionBehaviour_Paddq,
+	InstructionBehaviour_Pmullw,
+	InstructionBehaviour_Movq2dq,
+	InstructionBehaviour_Movdq2q,
+	InstructionBehaviour_Pmovmskb,
+	InstructionBehaviour_Psubusb,
+	InstructionBehaviour_Psubusw,
+	InstructionBehaviour_Pminub,
+	InstructionBehaviour_Pand,
+	InstructionBehaviour_Paddusb,
+	InstructionBehaviour_Paddusw,
+	InstructionBehaviour_Pmaxub,
+	InstructionBehaviour_Pandn,
+	InstructionBehaviour_Pavgb,
+	InstructionBehaviour_Pavgw,
+	InstructionBehaviour_Pmulhuw,
+	InstructionBehaviour_Pmulhw,
+	InstructionBehaviour_Cvtpd2dq,
+	InstructionBehaviour_Cvttpd2dq,
+	InstructionBehaviour_Cvtdq2pd,
+	InstructionBehaviour_Movntq,
+	InstructionBehaviour_Movntdq,
+	InstructionBehaviour_Psubsb,
+	InstructionBehaviour_Psubsw,
+	InstructionBehaviour_Pminsw,
+	InstructionBehaviour_Por,
+	InstructionBehaviour_Paddsb,
+	InstructionBehaviour_Paddsw,
+	InstructionBehaviour_Pmaxsw,
+	InstructionBehaviour_Pxor,
+	InstructionBehaviour_Lddqu,
+	InstructionBehaviour_Pmuludq,
+	InstructionBehaviour_Pmaddwd,
+	InstructionBehaviour_Psadbw,
+	InstructionBehaviour_Maskmovq,
+	InstructionBehaviour_Maskmovdqu,
+	InstructionBehaviour_Psubb,
+	InstructionBehaviour_Psubw,
+	InstructionBehaviour_Psubd,
+	InstructionBehaviour_Psubq,
+	InstructionBehaviour_Paddb,
+	InstructionBehaviour_Paddw,
+	InstructionBehaviour_Paddd,
 } InstructionBehaviour, * PInstructionBehaviour;
 
 typedef enum _OperandType
@@ -615,8 +728,8 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 		{
 			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
 				StringLength += sprintf(Buffer + StringLength, "%08X", Operand->Memory.Offset);
-
-			StringLength += sprintf(Buffer + StringLength, " %c %08X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
+			else
+				StringLength += sprintf(Buffer + StringLength, " %c %08X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
 		}
 
 		*(Buffer + StringLength) = ']';
@@ -679,7 +792,26 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 	} break;
 	case OperandType_V:
 	{
-		StringLength = sprintf(Buffer, "%llX", Operand->Value.Value);
+		StringLength = 0;
+		switch (Operand->OperandSize)
+		{
+		case OperationSize_8:
+		{
+			StringLength = sprintf(Buffer + StringLength, "%02X", Operand->Value.Value);
+		} break;
+		case OperationSize_16:
+		{
+			StringLength = sprintf(Buffer + StringLength, "%04X", Operand->Value.Value);
+		} break;
+		case OperationSize_32:
+		{
+			StringLength = sprintf(Buffer + StringLength, "%08X", Operand->Value.Value);
+		} break;
+		case OperationSize_64:
+		{
+			StringLength = sprintf(Buffer + StringLength, "%016X", Operand->Value.Value);
+		} break;
+		}
 	} break;
 	}
 
@@ -689,7 +821,7 @@ static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Leng
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall", "clts", "sysret", "invd", "wbinvd", "movups", "movss", "movupd", "movsd", "movhlps", "movlps", "movlpd", "movddup", "movsldup", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "movlhps", "movhps", "movhpd", "movshdup", "prefetchnta", "prefetcht0", "prefetcht1" , "prefetcht2", "movaps", "movapd", "cvtpi2ps", "cvtsi2ss", "cvtpi2pd", "cvtsi2sd", "movntps", "movntpd", "cvttps2pi", "cvttss2si", "cvttpd2pi", "cvttsd2si", "cvtps2pi", "cvtss2si", "cvtpd2pi", "cvtsd2si", "ucomiss", "ucomisd", "comiss", "comisd", "wrmsr", "rdtsc", "rdmsr", "rdpmc", "sysenter" , "sysexit" , "getsec", "invept", "invvpid", "movbe", "crc32", "roundps", "roundpd", "roundss", "roundsd", "blendps", "blendpd", "pblendw", "palignr", "pextrb", "pextrw", "pextr", "extractps", "pinsrb", "insertps", "pinsr", "dpps", "dppd", "mpsadbw", "pcmpestrm", "pcmpestri", "pcmpistrm", "pcmpistri", "cmovo", "cmovno", "cmovb", "cmovae", "cmove", "cmovne", "cmovbe", "cmova", "cmovs", "cmovns", "cmovp", "cmovnp", "cmovl", "cmovge", "cmovle", "cmovg", "movmskps", "movmskpd", "sqrtps", "sqrtss", "sqrtpd", "sqrtsd", "rsqrtps", "rsqrtss", "rcpps", "rcpss", "andps", "andpd", "andnps", "andnpd", "orps", "orpd", "xorps", "xorpd", "addps", "addss", "addpd", "addsd", "mulps", "mulss", "mulpd", "mulsd", "cvtps2pd", "cvtpd2ps", "cvtss2sd", "cvtsd2ss", "cvtdq2ps", "cvtps2dq", "cvttps2dq", "subps", "subss", "subpd", "subsd", "minps", "minss", "minpd", "minsd", "divps", "divss", "divps", "divsd", "maxps", "maxss", "maxpd", "maxsd", "punpcklbw", "punpcklwd", "punpckldq", "packsswb", "pcmpgtb", "pcmpgtw", "pcmpgtd", "packuswb", "punpckhbw", "punpckhwd", "punpckhdq", "packssdw", "punpcklqdq", "punpckhqdq", "movq", "movdqa", "movdqu", "pshufw", "pshuflw", "pshufhw", "pshufd", "psrlw", "psraw", "psllw", "psrld", "psrad", "pslld", "psrlq", "psrldq", "psllq", "pslldq"};
+	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall", "clts", "sysret", "invd", "wbinvd", "movups", "movss", "movupd", "movsd", "movhlps", "movlps", "movlpd", "movddup", "movsldup", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "movlhps", "movhps", "movhpd", "movshdup", "prefetchnta", "prefetcht0", "prefetcht1" , "prefetcht2", "movaps", "movapd", "cvtpi2ps", "cvtsi2ss", "cvtpi2pd", "cvtsi2sd", "movntps", "movntpd", "cvttps2pi", "cvttss2si", "cvttpd2pi", "cvttsd2si", "cvtps2pi", "cvtss2si", "cvtpd2pi", "cvtsd2si", "ucomiss", "ucomisd", "comiss", "comisd", "wrmsr", "rdtsc", "rdmsr", "rdpmc", "sysenter" , "sysexit" , "getsec", "invept", "invvpid", "movbe", "crc32", "roundps", "roundpd", "roundss", "roundsd", "blendps", "blendpd", "pblendw", "palignr", "pextrb", "pextrw", "pextr", "extractps", "pinsrb", "insertps", "pinsr", "dpps", "dppd", "mpsadbw", "pcmpestrm", "pcmpestri", "pcmpistrm", "pcmpistri", "cmovo", "cmovno", "cmovb", "cmovae", "cmove", "cmovne", "cmovbe", "cmova", "cmovs", "cmovns", "cmovp", "cmovnp", "cmovl", "cmovge", "cmovle", "cmovg", "movmskps", "movmskpd", "sqrtps", "sqrtss", "sqrtpd", "sqrtsd", "rsqrtps", "rsqrtss", "rcpps", "rcpss", "andps", "andpd", "andnps", "andnpd", "orps", "orpd", "xorps", "xorpd", "addps", "addss", "addpd", "addsd", "mulps", "mulss", "mulpd", "mulsd", "cvtps2pd", "cvtpd2ps", "cvtss2sd", "cvtsd2ss", "cvtdq2ps", "cvtps2dq", "cvttps2dq", "subps", "subss", "subpd", "subsd", "minps", "minss", "minpd", "minsd", "divps", "divss", "divps", "divsd", "maxps", "maxss", "maxpd", "maxsd", "punpcklbw", "punpcklwd", "punpckldq", "packsswb", "pcmpgtb", "pcmpgtw", "pcmpgtd", "packuswb", "punpckhbw", "punpckhwd", "punpckhdq", "packssdw", "punpcklqdq", "punpckhqdq", "movq", "movdqa", "movdqu", "pshufw", "pshuflw", "pshufhw", "pshufd", "psrlw", "psraw", "psllw", "psrld", "psrad", "pslld", "psrlq", "psrldq", "psllq", "pslldq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "emms", "vmread", "vmwrite", "haddpd", "haddps", "hsubpd", "hsubps", "seto", "setno", "setb", "setae", "sete", "setne", "setbe", "seta", "sets", "setns", "setp", "setnp", "setl", "setge", "setle", "setg", "cpuid", "bt", "shld", "rsm", "bts", "shrd", "fxsave", "fxrstor", "ldmxcsr", "stmxcsr", "xsave", "lfence", "xrstor", "xsaveopt", "mfence", "sfence", "clflush", "cmpxchg", "lss", "btr", "lfs", "lgs", "movzx", "popcnt", "btc", "bsf", "bsr", "movsx", "xadd", "cmpps", "cmpss", "cmppd", "cmpsd", "movnti", "pinsrw", "shufps", "shufpd", "vmptrld", "vmclear", "vmxon", "vmptrst", "bswap", "addsubpd", "addsubps", "paddq", "pmullw", "movq2dq", "movdq2q", "pmovmskb", "psubusb", "psubusw", "pminub", "pand", "paddusb", "paddusw", "pmaxub", "pandn", "pavgb", "pavgw", "pmulhuw", "pmulhw", "cvtpd2dq", "cvttpd2dq", "cvtdq2pd", "movntq", "movntdq", "psubsb", "psubsw", "pminsw", "por", "paddsb", "paddsw", "pmaxsw", "pxor", "lddqu", "pmuludq", "pmaddwd", "psadbw", "maskmovq", "maskmovdqu", "psubb", "psubw", "psubd", "psubq", "paddb", "paddw", "paddd"};
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
