@@ -1,8 +1,8 @@
 #include <string.h>
 #include <stdio.h>
+#include <Windows.h>
 #include "x86_x64.h"
 #include "x86_x64Parser.h"
-#include <Windows.h>
 
 int main()
 {
@@ -17,7 +17,7 @@ int main()
 
 	ConstructInstructionSet((x86_x64Instruction*)&Buffer, &OperationCount);
 
-	ParseCode((x86_x64Instruction*)Buffer, main, 0x9000  /*sizeof(Code)*/, (Operation*)Operations, &OperationCount);
+	ParseCodeBySize((x86_x64Instruction*)Buffer, main, 0xC000  /*sizeof(Code)*/, (Operation*)Operations, &OperationCount, 0);
 	Visualize((Operation*)Operations, OperationCount);
 
 	system("pause");

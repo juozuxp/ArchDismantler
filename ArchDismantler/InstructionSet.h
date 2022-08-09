@@ -564,6 +564,22 @@ typedef enum _MemoryOffsetSize
 	MemoryOffsetSize_32
 };
 
+typedef struct _VisualComponents
+{
+	const char* const* OLowRegisters;
+	const char* const* OHighRegisters;
+
+	const char* const* OWordRegisters;
+	const char* const* ODwordRegisters;
+	const char* const* OQwordRegisters;
+
+	const char* const* QwordRegisters;
+	const char* const* VectorRegisters;
+	const char* const* ControlRegisters;
+	const char* const* SegmentRegisters;
+	const char* const* FloatingRegisters;
+} VisualComponents, *PVisualComponents;
+
 #pragma pack(push, 1)
 
 typedef struct _Operand // Registers are counted 1 ... 254, 255 reserved for relativity
@@ -636,209 +652,224 @@ typedef struct _Operation
 
 #pragma pack(pop)
 
-static void VizualizeOperand(Operand* Operand, char* Buffer, unsigned long* Length)
+static const char* MapBehaviourToString(InstructionBehaviour Behaviour)
+{
+	static const char* const BehaviourString[] = { "invalid", "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall", "clts", "sysret", "invd", "wbinvd", "movups", "movss", "movupd", "movsd", "movhlps", "movlps", "movlpd", "movddup", "movsldup", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "movlhps", "movhps", "movhpd", "movshdup", "prefetchnta", "prefetcht0", "prefetcht1" , "prefetcht2", "movaps", "movapd", "cvtpi2ps", "cvtsi2ss", "cvtpi2pd", "cvtsi2sd", "movntps", "movntpd", "cvttps2pi", "cvttss2si", "cvttpd2pi", "cvttsd2si", "cvtps2pi", "cvtss2si", "cvtpd2pi", "cvtsd2si", "ucomiss", "ucomisd", "comiss", "comisd", "wrmsr", "rdtsc", "rdmsr", "rdpmc", "sysenter" , "sysexit" , "getsec", "invept", "invvpid", "movbe", "crc32", "roundps", "roundpd", "roundss", "roundsd", "blendps", "blendpd", "pblendw", "palignr", "pextrb", "pextrw", "pextr", "extractps", "pinsrb", "insertps", "pinsr", "dpps", "dppd", "mpsadbw", "pcmpestrm", "pcmpestri", "pcmpistrm", "pcmpistri", "cmovo", "cmovno", "cmovb", "cmovae", "cmove", "cmovne", "cmovbe", "cmova", "cmovs", "cmovns", "cmovp", "cmovnp", "cmovl", "cmovge", "cmovle", "cmovg", "movmskps", "movmskpd", "sqrtps", "sqrtss", "sqrtpd", "sqrtsd", "rsqrtps", "rsqrtss", "rcpps", "rcpss", "andps", "andpd", "andnps", "andnpd", "orps", "orpd", "xorps", "xorpd", "addps", "addss", "addpd", "addsd", "mulps", "mulss", "mulpd", "mulsd", "cvtps2pd", "cvtpd2ps", "cvtss2sd", "cvtsd2ss", "cvtdq2ps", "cvtps2dq", "cvttps2dq", "subps", "subss", "subpd", "subsd", "minps", "minss", "minpd", "minsd", "divps", "divss", "divps", "divsd", "maxps", "maxss", "maxpd", "maxsd", "punpcklbw", "punpcklwd", "punpckldq", "packsswb", "pcmpgtb", "pcmpgtw", "pcmpgtd", "packuswb", "punpckhbw", "punpckhwd", "punpckhdq", "packssdw", "punpcklqdq", "punpckhqdq", "movq", "movdqa", "movdqu", "pshufw", "pshuflw", "pshufhw", "pshufd", "psrlw", "psraw", "psllw", "psrld", "psrad", "pslld", "psrlq", "psrldq", "psllq", "pslldq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "emms", "vmread", "vmwrite", "haddpd", "haddps", "hsubpd", "hsubps", "seto", "setno", "setb", "setae", "sete", "setne", "setbe", "seta", "sets", "setns", "setp", "setnp", "setl", "setge", "setle", "setg", "cpuid", "bt", "shld", "rsm", "bts", "shrd", "fxsave", "fxrstor", "ldmxcsr", "stmxcsr", "xsave", "lfence", "xrstor", "xsaveopt", "mfence", "sfence", "clflush", "cmpxchg", "lss", "btr", "lfs", "lgs", "movzx", "popcnt", "btc", "bsf", "bsr", "movsx", "xadd", "cmpps", "cmpss", "cmppd", "cmpsd", "movnti", "pinsrw", "shufps", "shufpd", "vmptrld", "vmclear", "vmxon", "vmptrst", "bswap", "addsubpd", "addsubps", "paddq", "pmullw", "movq2dq", "movdq2q", "pmovmskb", "psubusb", "psubusw", "pminub", "pand", "paddusb", "paddusw", "pmaxub", "pandn", "pavgb", "pavgw", "pmulhuw", "pmulhw", "cvtpd2dq", "cvttpd2dq", "cvtdq2pd", "movntq", "movntdq", "psubsb", "psubsw", "pminsw", "por", "paddsb", "paddsw", "pmaxsw", "pxor", "lddqu", "pmuludq", "pmaddwd", "psadbw", "maskmovq", "maskmovdqu", "psubb", "psubw", "psubd", "psubq", "paddb", "paddw", "paddd" };
+	return BehaviourString[Behaviour];
+}
+
+static void VizualizeOperand(Operand* Operand, HANDLE Console)
 {
 	const char SizeSuffix[] = { 'b', 'w', 'd', 0, 't', 'o' };
 	const char Multiplier[] = { 0, '2', '4', '8' };
 	const char HighLowSuffix[] = { 'l', 'h' };
 
-	unsigned long StringLength;
+	SetConsoleTextAttribute(Console, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 
-	StringLength = 0;
 	switch (Operand->Type)
 	{
 	case OperandType_IR:
 	{
-		StringLength = sprintf(Buffer, "R%u%c", Operand->Register.Register - 1, (Operand->OperandSize == OperationSize_8) ? HighLowSuffix[Operand->Register.HighLowPart] : SizeSuffix[Operand->OperandSize - 1]) - (SizeSuffix[Operand->OperandSize - 1] ? 0 : 1);
+		printf("R%u%c", Operand->Register.Register - 1, (Operand->OperandSize == OperationSize_8) ? HighLowSuffix[Operand->Register.HighLowPart] : SizeSuffix[Operand->OperandSize - 1]) - (SizeSuffix[Operand->OperandSize - 1] ? 0 : 1);
 	} break;
 	case OperandType_SR:
 	{
-		StringLength = sprintf(Buffer, "S%u", Operand->Register.Register - 1);
+		printf("S%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_FR:
 	{
-		StringLength = sprintf(Buffer, "FR%u", Operand->Register.Register - 1);
+		printf("FR%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_CR:
 	{
-		StringLength = sprintf(Buffer, "CR%u", Operand->Register.Register - 1);
+		printf("CR%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_VR:
 	{
-		StringLength = sprintf(Buffer, "VR%u", Operand->Register.Register - 1);
+		printf("VR%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_DR:
 	{
-		StringLength = sprintf(Buffer, "DR%u", Operand->Register.Register - 1);
+		printf("DR%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_QR:
 	{
-		StringLength = sprintf(Buffer, "QR%u", Operand->Register.Register - 1);
+		printf("QR%u", Operand->Register.Register - 1);
 	} break;
 	case OperandType_M:
 	{
-		StringLength = 0;
-
 		switch (Operand->OperandSize)
 		{
 		case OperationSize_8:
 		{
-			StringLength = sprintf(Buffer, "byte ptr ");
+			printf("byte ptr ");
 		} break;
 		case OperationSize_16:
 		{
-			StringLength = sprintf(Buffer, "word ptr ");
+			printf("word ptr ");
 		} break;
 		case OperationSize_32:
 		{
-			StringLength = sprintf(Buffer, "dword ptr ");
+			printf("dword ptr ");
 		} break;
 		case OperationSize_64:
 		{
-			StringLength = sprintf(Buffer, "qword ptr ");
+			printf("qword ptr ");
 		} break;
 		case OperationSize_80:
 		{
-			StringLength = sprintf(Buffer, "tword ptr ");
+			printf("tword ptr ");
 		} break;
 		case OperationSize_128:
 		{
-			StringLength = sprintf(Buffer, "oword ptr ");
+			printf("oword ptr ");
 		} break;
 		}
 
 		if (Operand->Memory.Segment)
-			StringLength += sprintf(Buffer + StringLength, "S%u:", Operand->Memory.Segment - 1);
+			printf("S%u:", Operand->Memory.Segment - 1);
 
-		*(Buffer + StringLength) = '[';
-		StringLength++;
+		SetConsoleTextAttribute(Console, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
+
+		printf("[");
 
 		if (Operand->Memory.FirstRegister)
 		{
+			SetConsoleTextAttribute(Console, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+
 			if (Operand->Memory.FirstRegister == (unsigned char)~0)
-				StringLength += sprintf(Buffer + StringLength, "Rel");
+				printf("Rel");
 			else
-				StringLength += sprintf(Buffer + StringLength, "R%u", Operand->Memory.FirstRegister - 1);
+				printf("R%u", Operand->Memory.FirstRegister - 1);
 		}
 
 		if (Operand->Memory.SecondRegister)
-			StringLength += sprintf(Buffer + StringLength, " + R%u", Operand->Memory.SecondRegister - 1);
+		{
+			SetConsoleTextAttribute(Console, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
+			printf(" + ");
+
+			SetConsoleTextAttribute(Console, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+			printf("R%u", Operand->Memory.SecondRegister - 1);
+		}
 
 		if (Operand->Memory.Multiplier)
-			StringLength += sprintf(Buffer + StringLength, " * %c", Multiplier[Operand->Memory.Multiplier]);
+		{
+			SetConsoleTextAttribute(Console, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
+			printf(" * ");
+
+			SetConsoleTextAttribute(Console, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+			printf("%c", Multiplier[Operand->Memory.Multiplier]);
+		}
 
 		if (Operand->Memory.OffsetSize == MemoryOffsetSize_8)
 		{
 			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
-				StringLength += sprintf(Buffer + StringLength, "%02X", Operand->Memory.Offset);
+				printf("%02X", Operand->Memory.Offset);
 
-			StringLength += sprintf(Buffer + StringLength, " %c %02X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
+			printf(" %c %02X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
 		}
 		else if (Operand->Memory.OffsetSize == MemoryOffsetSize_32)
 		{
 			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
-				StringLength += sprintf(Buffer + StringLength, "%08X", Operand->Memory.Offset);
+				printf("%08X", Operand->Memory.Offset);
 			else
-				StringLength += sprintf(Buffer + StringLength, " %c %08X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
+				printf(" %c %08X", Operand->Memory.Offset < 0 ? '-' : '+', Operand->Memory.Offset < 0 ? -Operand->Memory.Offset : Operand->Memory.Offset);
 		}
 
-		*(Buffer + StringLength) = ']';
-		*(Buffer + StringLength + 1) = '\0';
+		SetConsoleTextAttribute(Console, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
 
-		StringLength++;
+		printf("]");
 	} break;
 	case OperandType_ML:
 	{
-		StringLength = 0;
-
 		switch (Operand->OperandSize)
 		{
 		case OperationSize_8:
 		{
-			StringLength = sprintf(Buffer, "byte ptr ");
+			printf("byte ptr ");
 		} break;
 		case OperationSize_16:
 		{
-			StringLength = sprintf(Buffer, "word ptr ");
+			printf("word ptr ");
 		} break;
 		case OperationSize_32:
 		{
-			StringLength = sprintf(Buffer, "dword ptr ");
+			printf("dword ptr ");
 		} break;
 		case OperationSize_64:
 		{
-			StringLength = sprintf(Buffer, "qword ptr ");
+			printf("qword ptr ");
 		} break;
 		case OperationSize_80:
 		{
-			StringLength = sprintf(Buffer, "tword ptr ");
+			printf("tword ptr ");
 		} break;
 		case OperationSize_128:
 		{
-			StringLength = sprintf(Buffer, "oword ptr ");
+			printf("oword ptr ");
 		} break;
 		}
 
-		StringLength += sprintf(Buffer + StringLength, "[%016llX]", Operand->MemoryLarge.Value);
+		printf("[%016llX]", Operand->MemoryLarge.Value);
 	} break;
 	case OperandType_Rel:
 	{
-		StringLength = 0;
 		switch (Operand->OperandSize)
 		{
 		case OperationSize_8:
 		{
-			StringLength = sprintf(Buffer + StringLength, "Rel %c %02X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
+			printf("Rel %c %02X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
 		case OperationSize_16:
 		{
-			StringLength = sprintf(Buffer + StringLength, "Rel %c %04X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
+			printf("Rel %c %04X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
 		case OperationSize_32:
 		{
-			StringLength = sprintf(Buffer + StringLength, "Rel %c %08X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
+			printf("Rel %c %08X", Operand->RelValue.Value < 0 ? '-' : '+', Operand->RelValue.Value < 0 ? -Operand->RelValue.Value : Operand->RelValue.Value);
 		} break;
 		}
 	} break;
 	case OperandType_V:
 	{
-		StringLength = 0;
 		switch (Operand->OperandSize)
 		{
 		case OperationSize_8:
 		{
-			StringLength = sprintf(Buffer + StringLength, "%02X", Operand->Value.Value);
+			printf("%02X", Operand->Value.Value);
 		} break;
 		case OperationSize_16:
 		{
-			StringLength = sprintf(Buffer + StringLength, "%04X", Operand->Value.Value);
+			printf("%04X", Operand->Value.Value);
 		} break;
 		case OperationSize_32:
 		{
-			StringLength = sprintf(Buffer + StringLength, "%08X", Operand->Value.Value);
+			printf("%08X", Operand->Value.Value);
 		} break;
 		case OperationSize_64:
 		{
-			StringLength = sprintf(Buffer + StringLength, "%016X", Operand->Value.Value);
+			printf("%016X", Operand->Value.Value);
 		} break;
 		}
 	} break;
 	}
-
-	if (Length)
-		*Length = StringLength;
 }
 
 static void Visualize(Operation* Operations, unsigned long OperationCount)
 {
-	const char* const BehaviourToString[] = { "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall", "clts", "sysret", "invd", "wbinvd", "movups", "movss", "movupd", "movsd", "movhlps", "movlps", "movlpd", "movddup", "movsldup", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "movlhps", "movhps", "movhpd", "movshdup", "prefetchnta", "prefetcht0", "prefetcht1" , "prefetcht2", "movaps", "movapd", "cvtpi2ps", "cvtsi2ss", "cvtpi2pd", "cvtsi2sd", "movntps", "movntpd", "cvttps2pi", "cvttss2si", "cvttpd2pi", "cvttsd2si", "cvtps2pi", "cvtss2si", "cvtpd2pi", "cvtsd2si", "ucomiss", "ucomisd", "comiss", "comisd", "wrmsr", "rdtsc", "rdmsr", "rdpmc", "sysenter" , "sysexit" , "getsec", "invept", "invvpid", "movbe", "crc32", "roundps", "roundpd", "roundss", "roundsd", "blendps", "blendpd", "pblendw", "palignr", "pextrb", "pextrw", "pextr", "extractps", "pinsrb", "insertps", "pinsr", "dpps", "dppd", "mpsadbw", "pcmpestrm", "pcmpestri", "pcmpistrm", "pcmpistri", "cmovo", "cmovno", "cmovb", "cmovae", "cmove", "cmovne", "cmovbe", "cmova", "cmovs", "cmovns", "cmovp", "cmovnp", "cmovl", "cmovge", "cmovle", "cmovg", "movmskps", "movmskpd", "sqrtps", "sqrtss", "sqrtpd", "sqrtsd", "rsqrtps", "rsqrtss", "rcpps", "rcpss", "andps", "andpd", "andnps", "andnpd", "orps", "orpd", "xorps", "xorpd", "addps", "addss", "addpd", "addsd", "mulps", "mulss", "mulpd", "mulsd", "cvtps2pd", "cvtpd2ps", "cvtss2sd", "cvtsd2ss", "cvtdq2ps", "cvtps2dq", "cvttps2dq", "subps", "subss", "subpd", "subsd", "minps", "minss", "minpd", "minsd", "divps", "divss", "divps", "divsd", "maxps", "maxss", "maxpd", "maxsd", "punpcklbw", "punpcklwd", "punpckldq", "packsswb", "pcmpgtb", "pcmpgtw", "pcmpgtd", "packuswb", "punpckhbw", "punpckhwd", "punpckhdq", "packssdw", "punpcklqdq", "punpckhqdq", "movq", "movdqa", "movdqu", "pshufw", "pshuflw", "pshufhw", "pshufd", "psrlw", "psraw", "psllw", "psrld", "psrad", "pslld", "psrlq", "psrldq", "psllq", "pslldq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "emms", "vmread", "vmwrite", "haddpd", "haddps", "hsubpd", "hsubps", "seto", "setno", "setb", "setae", "sete", "setne", "setbe", "seta", "sets", "setns", "setp", "setnp", "setl", "setge", "setle", "setg", "cpuid", "bt", "shld", "rsm", "bts", "shrd", "fxsave", "fxrstor", "ldmxcsr", "stmxcsr", "xsave", "lfence", "xrstor", "xsaveopt", "mfence", "sfence", "clflush", "cmpxchg", "lss", "btr", "lfs", "lgs", "movzx", "popcnt", "btc", "bsf", "bsr", "movsx", "xadd", "cmpps", "cmpss", "cmppd", "cmpsd", "movnti", "pinsrw", "shufps", "shufpd", "vmptrld", "vmclear", "vmxon", "vmptrst", "bswap", "addsubpd", "addsubps", "paddq", "pmullw", "movq2dq", "movdq2q", "pmovmskb", "psubusb", "psubusw", "pminub", "pand", "paddusb", "paddusw", "pmaxub", "pandn", "pavgb", "pavgw", "pmulhuw", "pmulhw", "cvtpd2dq", "cvttpd2dq", "cvtdq2pd", "movntq", "movntdq", "psubsb", "psubsw", "pminsw", "por", "paddsb", "paddsw", "pmaxsw", "pxor", "lddqu", "pmuludq", "pmaddwd", "psadbw", "maskmovq", "maskmovdqu", "psubb", "psubw", "psubd", "psubq", "paddb", "paddw", "paddd"};
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 
 	char Buffer[0x100];
 	char* RunBuffer;
 
+	HANDLE Console;
+
+	Console = GetStdHandle(STD_OUTPUT_HANDLE);
+
 	for (; OperationCount; OperationCount--, Operations++)
 	{
+		SetConsoleTextAttribute(Console, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
+
 		if (Operations->Behaviour == InstructionBehaviour_Invalid)
 		{
 			printf("Invalid\n");
@@ -847,7 +878,7 @@ static void Visualize(Operation* Operations, unsigned long OperationCount)
 
 		if (Operations->Type == OperationType_OperandLess)
 		{
-			printf("%s%c\n", BehaviourToString[Operations->Behaviour - 1], OperationSizeToChar[Operations->OL.OperationSize]);
+			printf("%s%c\n", MapBehaviourToString((InstructionBehaviour)Operations->Behaviour), OperationSizeToChar[Operations->OL.OperationSize]);
 			continue;
 		}
 
@@ -856,33 +887,37 @@ static void Visualize(Operation* Operations, unsigned long OperationCount)
 		{
 		case OperationType_RepeatZ:
 		{
-			RunBuffer += sprintf(RunBuffer, "repz ");
+			printf("repz ");
 		} break;
 		case OperationType_RepeatNotZ:
 		{
-			RunBuffer += sprintf(RunBuffer, "repnz ");
+			printf("repnz ");
 		} break;
 		case OperationType_Locked:
 		{
-			RunBuffer += sprintf(RunBuffer, "lock ");
+			printf("lock ");
 		} break;
 		}
 
-		RunBuffer += sprintf(RunBuffer, "%s ", BehaviourToString[Operations->Behaviour - 1]);
+		printf("%s ", MapBehaviourToString((InstructionBehaviour)Operations->Behaviour));
 		for (unsigned long i = 0; Operations->N.Operands[i].Type && i < (sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])); i++)
 		{
-			unsigned long Length;
+			VizualizeOperand(&Operations->N.Operands[i], Console);
 
-			VizualizeOperand(&Operations->N.Operands[i], RunBuffer, &Length);
-			RunBuffer += Length;
+			SetConsoleTextAttribute(Console, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
 
 			if (i < ((sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])) - 1) && Operations->N.Operands[i + 1].Type)
-			{
-				memcpy(RunBuffer, ", ", sizeof(", "));
-				RunBuffer += sizeof(", ") - 1;
-			}
+				printf(", ");
 		}
 
-		printf("%s\n", Buffer);
+		printf("\n");
 	}
+}
+
+static void VisualiseOperandComplex(Operand* Operand, const VisualComponents* Components)
+{
+}
+
+static void VisualiseComplex(Operation* Operations, unsigned long OperationCount, const VisualComponents* Components)
+{
 }
