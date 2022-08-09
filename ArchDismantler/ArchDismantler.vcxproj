@@ -130,6 +130,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConsoleVisualizer.h" />
     <ClInclude Include="x86_x64.h" />
     <ClInclude Include="InstructionSet.h" />
     <ClInclude Include="x86_x64Base.h" />
