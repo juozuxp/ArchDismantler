@@ -4,6 +4,8 @@
 #define BREAK_RGB(Color) (((Color) >> 16) & 0xFF), (((Color) >> 8) & 0xFF), ((Color) & 0xFF)
 #define SET_DEFAULT_COLORS(ColorArray, Size) memset(ColorArray, 0xFF, Size);
 
+#define TO_HEX_CHAR(Number) (((Number) >= 10) ? (((Number) - 10) + 'A') : ((Number) + '0'))
+
 typedef enum _ComponentColors
 {
 	ComponentColors_LowRegisters,
@@ -29,8 +31,9 @@ typedef enum _ComponentColors
 	ComponentColors_Subtraction,
 	ComponentColors_Multiplication,
 	ComponentColors_MemoryEnclosure,
+	ComponentColors_OperationBytes,
 	ComponentColors_ARRAYMAX
-} ComponentColors, *PComponentColors;
+} ComponentColors, * PComponentColors;
 
 typedef enum _ComponentFlags
 {
@@ -42,12 +45,17 @@ typedef enum _ComponentFlags
 	ComponentFlags_PadImmediateMemory,
 	ComponentFlags_HexImmediateMemory,
 	ComponentFlags_DisplayAddressRelative,
+	ComponentFlags_DisplayOperationBytes,
 	ComponentFlags_ARRAYMAX
-} ComponentFlags, *PComponentFlags;
+} ComponentFlags, * PComponentFlags;
 
 typedef struct _VisualComponents
 {
-	void* DisasemblyBase;
+	unsigned char OpcodeBytePadding;
+
+	const void* DissasemblyBase;
+	const void* DisassemblySource;
+
 	const unsigned char* InstructionSizes;
 
 	const char* const* LowRegisters;
@@ -79,7 +87,7 @@ static const char* VisualizeFormatNumber(OperationSize Size, unsigned char Padde
 	const char* const PadedNumberFormats[] = { 0, "\x1b[38;2;%u;%u;%um%02X", "\x1b[38;2;%u;%u;%um%04X", "\x1b[38;2;%u;%u;%um%08X", "\x1b[38;2;%u;%u;%um%016llX" };
 	const char* const DecNumberFormats[] = { 0, "\x1b[38;2;%u;%u;%um%u", "\x1b[38;2;%u;%u;%um%u", "\x1b[38;2;%u;%u;%um%u", "\x1b[38;2;%u;%u;%um%llu" };
 	const char* const HexNumberFormats[] = { 0, "\x1b[38;2;%u;%u;%um%X", "\x1b[38;2;%u;%u;%um%X", "\x1b[38;2;%u;%u;%um%X", "\x1b[38;2;%u;%u;%um%llX" };
-	
+
 	return Padded ? (Hexidecimal ? PadedNumberFormats[Size] : DecNumberFormats[Size]) : (Hexidecimal ? HexNumberFormats[Size] : DecNumberFormats[Size]);
 }
 
@@ -112,7 +120,7 @@ static void x86_x64BuildRegisterSet(VisualComponents* Components)
 	Components->FloatingRegisters = FRegisters;
 }
 
-static void VisualizeOperand(Operand* Operand, void* Location, const VisualComponents* Components)
+static void VisualizeOperand(const Operand* Operand, const void* Location, const VisualComponents* Components)
 {
 	const char* const MemorySizes[] = { "byte ptr", "word ptr", "dword ptr", "qword ptr", "tword ptr", "oword ptr" };
 
@@ -168,51 +176,51 @@ static void VisualizeOperand(Operand* Operand, void* Location, const VisualCompo
 			printf("\x1b[38;2;%u;%u;%um%c", BREAK_RGB(Components->Colors[ComponentColors_Multiplier]), Multiplier[Operand->Memory.Multiplier]);
 		}
 
-			if (Operand->Memory.OffsetSize == MemoryOffsetSize_8)
+		if (Operand->Memory.OffsetSize == MemoryOffsetSize_8)
+		{
+			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
+				printf(VisualizeFormatNumber(OperationSize_8, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
+			else
 			{
-				if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
-					printf(VisualizeFormatNumber(OperationSize_8, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
-				else
+				if (Operand->Memory.FirstRegister != (unsigned char)~0 || !Components->Flags[ComponentFlags_DisplayAddressRelative])
 				{
-					if (Operand->Memory.FirstRegister != (unsigned char)~0 || !Components->Flags[ComponentFlags_DisplayAddressRelative])
+					if (Operand->Memory.Offset < 0)
 					{
-						if (Operand->Memory.Offset < 0)
-						{
-							printf("\x1b[38;2;%u;%u;%um - ", BREAK_RGB(Components->Colors[ComponentColors_Subtraction]));
-							printf(VisualizeFormatNumber(OperationSize_8, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), -Operand->Memory.Offset);
-						}
-						else
-						{
-							printf("\x1b[38;2;%u;%u;%um + ", BREAK_RGB(Components->Colors[ComponentColors_Addition]));
-							printf(VisualizeFormatNumber(OperationSize_8, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
-						}
+						printf("\x1b[38;2;%u;%u;%um - ", BREAK_RGB(Components->Colors[ComponentColors_Subtraction]));
+						printf(VisualizeFormatNumber(OperationSize_8, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), -Operand->Memory.Offset);
 					}
 					else
-						printf(VisualizeFormatNumber(OperationSize_64, Components->Flags[ComponentFlags_PadAddress], Components->Flags[ComponentFlags_HexAddress]), BREAK_RGB(Components->Colors[ComponentColors_Address]), ((unsigned char*)Location) + Operand->Memory.Offset);
+					{
+						printf("\x1b[38;2;%u;%u;%um + ", BREAK_RGB(Components->Colors[ComponentColors_Addition]));
+						printf(VisualizeFormatNumber(OperationSize_8, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
+					}
 				}
+				else
+					printf(VisualizeFormatNumber(OperationSize_64, Components->Flags[ComponentFlags_PadAddress], Components->Flags[ComponentFlags_HexAddress]), BREAK_RGB(Components->Colors[ComponentColors_Address]), ((unsigned char*)Location) + Operand->Memory.Offset);
 			}
-			else if (Operand->Memory.OffsetSize == MemoryOffsetSize_32)
+		}
+		else if (Operand->Memory.OffsetSize == MemoryOffsetSize_32)
+		{
+			if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
+				printf(VisualizeFormatNumber(OperationSize_32, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
+			else
 			{
-				if (!Operand->Memory.FirstRegister && !Operand->Memory.SecondRegister)
-					printf(VisualizeFormatNumber(OperationSize_32, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
-				else
+				if (Operand->Memory.FirstRegister != (unsigned char)~0 || !Components->Flags[ComponentFlags_DisplayAddressRelative])
 				{
-					if (Operand->Memory.FirstRegister != (unsigned char)~0 || !Components->Flags[ComponentFlags_DisplayAddressRelative])
+					if (Operand->Memory.Offset < 0)
 					{
-						if (Operand->Memory.Offset < 0)
-						{
-							printf("\x1b[38;2;%u;%u;%um - ", BREAK_RGB(Components->Colors[ComponentColors_Subtraction]));
-							printf(VisualizeFormatNumber(OperationSize_32, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), -Operand->Memory.Offset);
-						}
-						else
-						{
-							printf("\x1b[38;2;%u;%u;%um + ", BREAK_RGB(Components->Colors[ComponentColors_Addition]));
-							printf(VisualizeFormatNumber(OperationSize_32, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
-						}
+						printf("\x1b[38;2;%u;%u;%um - ", BREAK_RGB(Components->Colors[ComponentColors_Subtraction]));
+						printf(VisualizeFormatNumber(OperationSize_32, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), -Operand->Memory.Offset);
 					}
 					else
-						printf(VisualizeFormatNumber(OperationSize_64, Components->Flags[ComponentFlags_PadAddress], Components->Flags[ComponentFlags_HexAddress]), BREAK_RGB(Components->Colors[ComponentColors_Address]), ((unsigned char*)Location) + Operand->Memory.Offset);
+					{
+						printf("\x1b[38;2;%u;%u;%um + ", BREAK_RGB(Components->Colors[ComponentColors_Addition]));
+						printf(VisualizeFormatNumber(OperationSize_32, Components->Flags[ComponentFlags_PadOffset], Components->Flags[ComponentFlags_HexOffset]), BREAK_RGB(Components->Colors[ComponentColors_Offset]), Operand->Memory.Offset);
+					}
 				}
+				else
+					printf(VisualizeFormatNumber(OperationSize_64, Components->Flags[ComponentFlags_PadAddress], Components->Flags[ComponentFlags_HexAddress]), BREAK_RGB(Components->Colors[ComponentColors_Address]), ((unsigned char*)Location) + Operand->Memory.Offset);
+			}
 		}
 
 		printf("\x1b[38;2;%u;%u;%um]", BREAK_RGB(Components->Colors[ComponentColors_MemoryEnclosure]));
@@ -337,14 +345,39 @@ static void VisualizeOperand(Operand* Operand, void* Location, const VisualCompo
 	}
 }
 
-static void Visualize(Operation* Operations, unsigned long OperationCount, const VisualComponents* Components)
+static void VisualizeBytes(const void* Location, unsigned char Size, const VisualComponents* Components)
+{
+	if (Components->OpcodeBytePadding < Size)
+		Size = Components->OpcodeBytePadding;
+
+	if (!Size)
+		return;
+
+	char Buffer[255 * 3];
+	char* RunBuffer;
+
+	RunBuffer = Buffer;
+	for (; Size; Size--, Location = ((unsigned char*)Location) + 1, RunBuffer += 3)
+	{
+		RunBuffer[0] = TO_HEX_CHAR((*(unsigned char*)Location) >> 4);
+		RunBuffer[1] = TO_HEX_CHAR((*(unsigned char*)Location) & ((1 << 4) - 1));
+		RunBuffer[2] = ' ';
+	}
+
+	*(RunBuffer - 1) = 0;
+
+	printf("\x1b[38;2;%u;%u;%um%s\x1b[%uG", BREAK_RGB(Components->Colors[ComponentColors_OperationBytes]), Buffer, (((unsigned long)Components->OpcodeBytePadding) * 3) + 1);
+}
+
+static void Visualize(const Operation* Operations, unsigned long OperationCount, const VisualComponents* Components)
 {
 	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
 	const char* PrefixBehaviour[] = { "lock", "repz", "repnz" };
 
 	unsigned long ConsoleMode;
 
-	void* Location;
+	const void* BaseLocation;
+	const void* Location;
 
 	HANDLE ConsoleHandle;
 
@@ -358,11 +391,18 @@ static void Visualize(Operation* Operations, unsigned long OperationCount, const
 	if (!SetConsoleMode(ConsoleHandle, ConsoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING))
 		return;
 
-	Location = Components->DisasemblyBase;
+	Location = Components->DisassemblySource;
+	BaseLocation = Components->DissasemblyBase;
 	for (unsigned long long i = 0; i < OperationCount; Operations++, i++)
 	{
 		if (Components->InstructionSizes)
+		{
+			if (Components->Flags[ComponentFlags_DisplayOperationBytes])
+				VisualizeBytes(Location, Components->InstructionSizes[i], Components);
+
 			Location = ((unsigned char*)Location) + Components->InstructionSizes[i];
+			BaseLocation = ((unsigned char*)BaseLocation) + Components->InstructionSizes[i];
+		}
 
 		if (!Operations->Behaviour)
 		{
@@ -382,7 +422,7 @@ static void Visualize(Operation* Operations, unsigned long OperationCount, const
 		printf("\x1b[38;2;%u;%u;%um%s ", BREAK_RGB(Components->Colors[ComponentColors_Behaviour]), MapBehaviourToString((InstructionBehaviour)Operations->Behaviour));
 		for (unsigned long i = 0; Operations->N.Operands[i].Type && i < (sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])); i++)
 		{
-			VisualizeOperand(&Operations->N.Operands[i], Location, Components);
+			VisualizeOperand(&Operations->N.Operands[i], BaseLocation, Components);
 			if (i < ((sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])) - 1) && Operations->N.Operands[i + 1].Type)
 				printf("\x1b[38;2;%u;%u;%um, ", BREAK_RGB(Components->Colors[ComponentColors_Seperator]));
 		}

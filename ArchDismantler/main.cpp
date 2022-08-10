@@ -20,16 +20,21 @@ int main()
 
 	ConstructInstructionSet((x86_x64Instruction*)&Buffer, &OperationCount);
 
-	ParseCodeBySize((x86_x64Instruction*)Buffer, printf, 0x1000  /*sizeof(Code)*/, (Operation*)Operations, &OperationCount, Buffer + 0x7000);
+	ParseCodeBySize((x86_x64Instruction*)Buffer, GetModuleHandleA, 0x2000  /*sizeof(Code)*/, (Operation*)Operations, &OperationCount, Buffer + 0x6000);
 
 	memset(&Components, 0, sizeof(Components));
 	memset(&Components.Colors, 0xFF, sizeof(Components.Colors));
 
-	Components.DisasemblyBase = printf;
-	Components.InstructionSizes = Buffer + 0x7000;
+	Components.DissasemblyBase = GetModuleHandleA;
+	Components.DisassemblySource = GetModuleHandleA;
+	Components.InstructionSizes = Buffer + 0x6000;
+
+	Components.OpcodeBytePadding = 14;
 
 	Components.Colors[ComponentColors_Offset] = 0xFF00FF;
 	Components.Colors[ComponentColors_Address] = 0xFF00FF;
+	Components.Colors[ComponentColors_Multiplier] = 0x8080FF;
+	Components.Colors[ComponentColors_OperationBytes] = 0x008080;
 	Components.Colors[ComponentColors_ImmediateMemory] = 0xFF00FF;
 
 	Components.Colors[ComponentColors_Behaviour] = 0xFFFFFF;
@@ -55,7 +60,9 @@ int main()
 	Components.Flags[ComponentFlags_PadOffset] = 1;
 	Components.Flags[ComponentFlags_HexAddress] = 1;
 	Components.Flags[ComponentFlags_PadAddress] = 1;
+	Components.Flags[ComponentFlags_HexImmediateMemory] = 1;
 
+	Components.Flags[ComponentFlags_DisplayOperationBytes] = 1;
 	Components.Flags[ComponentFlags_DisplayAddressRelative] = 1;
 
 	Components.Flags[ComponentFlags_SpecifyMemorySize] = 1;
