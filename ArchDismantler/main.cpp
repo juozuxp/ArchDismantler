@@ -4,6 +4,8 @@
 #include "x86_x64.h"
 #include "x86_x64Parser.h"
 #include "ConsoleVisualizer.h"
+#include "../../../Visual Studio 2022/General Headers/um/Imports.h"
+#include "../../../Visual Studio 2022/General Headers/both/PEDisector.h"
 
 int main()
 {
@@ -12,6 +14,7 @@ int main()
 	static unsigned char Operations[0x100000];
 	unsigned char Buffer[0x8000];
 
+	IMAGE_SECTION_HEADER* Header;
 	VisualComponents Components;
 
 	unsigned char Code[] = { 0x65, 0x01, 0x44, 0x00, 0x00 /*0xCD, 0x5B, 0x07*/ /*, 0xC1, 0x00, 0x00*/ };
@@ -20,22 +23,26 @@ int main()
 
 	ConstructInstructionSet((x86_x64Instruction*)&Buffer, &OperationCount);
 
-	ParseCodeBySize((x86_x64Instruction*)Buffer, GetModuleHandleA, 0x2000  /*sizeof(Code)*/, (Operation*)Operations, &OperationCount, Buffer + 0x6000);
+	FindSectionByName(GetModuleHandleA("ntdll.dll"), ".text", &Header);
+
+	ParseCodeBySize((x86_x64Instruction*)Buffer, GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation"), 0x4000  /*sizeof(Code)*/, (Operation*)Operations, &OperationCount, Buffer + 0x5000);
 
 	memset(&Components, 0, sizeof(Components));
 	memset(&Components.Colors, 0xFF, sizeof(Components.Colors));
 
-	Components.DissasemblyBase = GetModuleHandleA;
-	Components.DisassemblySource = GetModuleHandleA;
-	Components.InstructionSizes = Buffer + 0x6000;
+	Components.DissasemblyBase = GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation");
+	Components.DisassemblySource = GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation");
+	Components.InstructionSizes = Buffer + 0x5000;
 
 	Components.OpcodeBytePadding = 14;
+	Components.BehaviourOperandPadding = 10;
 
 	Components.Colors[ComponentColors_Offset] = 0xFF00FF;
 	Components.Colors[ComponentColors_Address] = 0xFF00FF;
 	Components.Colors[ComponentColors_Multiplier] = 0x8080FF;
 	Components.Colors[ComponentColors_OperationBytes] = 0x008080;
 	Components.Colors[ComponentColors_ImmediateMemory] = 0xFF00FF;
+	Components.Colors[ComponentColors_OperationAddress] = 0x808080;
 
 	Components.Colors[ComponentColors_Behaviour] = 0xFFFFFF;
 	Components.Colors[ComponentColors_MemoryEnclosure] = 0xFFFFFF;
@@ -64,6 +71,7 @@ int main()
 
 	Components.Flags[ComponentFlags_DisplayOperationBytes] = 1;
 	Components.Flags[ComponentFlags_DisplayAddressRelative] = 1;
+	Components.Flags[ComponentFlags_DisplayOperationAddress] = 1;
 
 	Components.Flags[ComponentFlags_SpecifyMemorySize] = 1;
 

@@ -32,6 +32,8 @@ typedef enum _ComponentColors
 	ComponentColors_Multiplication,
 	ComponentColors_MemoryEnclosure,
 	ComponentColors_OperationBytes,
+	ComponentColors_OperationAddress,
+	ComponentColors_OperationRelative,
 	ComponentColors_ARRAYMAX
 } ComponentColors, * PComponentColors;
 
@@ -46,12 +48,16 @@ typedef enum _ComponentFlags
 	ComponentFlags_HexImmediateMemory,
 	ComponentFlags_DisplayAddressRelative,
 	ComponentFlags_DisplayOperationBytes,
+	ComponentFlags_DisplayOperationAddress,
+	ComponentFlags_DisplayOperationRelative,
 	ComponentFlags_ARRAYMAX
 } ComponentFlags, * PComponentFlags;
 
 typedef struct _VisualComponents
 {
 	unsigned char OpcodeBytePadding;
+	unsigned char BehaviourOperandPadding;
+	unsigned char OperationRelativePadding;
 
 	const void* DissasemblyBase;
 	const void* DisassemblySource;
@@ -78,7 +84,7 @@ typedef struct _VisualComponents
 
 static const char* MapBehaviourToString(InstructionBehaviour Behaviour)
 {
-	static const char* const BehaviourString[] = { "invalid", "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall", "clts", "sysret", "invd", "wbinvd", "movups", "movss", "movupd", "movsd", "movhlps", "movlps", "movlpd", "movddup", "movsldup", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "movlhps", "movhps", "movhpd", "movshdup", "prefetchnta", "prefetcht0", "prefetcht1" , "prefetcht2", "movaps", "movapd", "cvtpi2ps", "cvtsi2ss", "cvtpi2pd", "cvtsi2sd", "movntps", "movntpd", "cvttps2pi", "cvttss2si", "cvttpd2pi", "cvttsd2si", "cvtps2pi", "cvtss2si", "cvtpd2pi", "cvtsd2si", "ucomiss", "ucomisd", "comiss", "comisd", "wrmsr", "rdtsc", "rdmsr", "rdpmc", "sysenter" , "sysexit" , "getsec", "invept", "invvpid", "movbe", "crc32", "roundps", "roundpd", "roundss", "roundsd", "blendps", "blendpd", "pblendw", "palignr", "pextrb", "pextrw", "pextr", "extractps", "pinsrb", "insertps", "pinsr", "dpps", "dppd", "mpsadbw", "pcmpestrm", "pcmpestri", "pcmpistrm", "pcmpistri", "cmovo", "cmovno", "cmovb", "cmovae", "cmove", "cmovne", "cmovbe", "cmova", "cmovs", "cmovns", "cmovp", "cmovnp", "cmovl", "cmovge", "cmovle", "cmovg", "movmskps", "movmskpd", "sqrtps", "sqrtss", "sqrtpd", "sqrtsd", "rsqrtps", "rsqrtss", "rcpps", "rcpss", "andps", "andpd", "andnps", "andnpd", "orps", "orpd", "xorps", "xorpd", "addps", "addss", "addpd", "addsd", "mulps", "mulss", "mulpd", "mulsd", "cvtps2pd", "cvtpd2ps", "cvtss2sd", "cvtsd2ss", "cvtdq2ps", "cvtps2dq", "cvttps2dq", "subps", "subss", "subpd", "subsd", "minps", "minss", "minpd", "minsd", "divps", "divss", "divps", "divsd", "maxps", "maxss", "maxpd", "maxsd", "punpcklbw", "punpcklwd", "punpckldq", "packsswb", "pcmpgtb", "pcmpgtw", "pcmpgtd", "packuswb", "punpckhbw", "punpckhwd", "punpckhdq", "packssdw", "punpcklqdq", "punpckhqdq", "movq", "movdqa", "movdqu", "pshufw", "pshuflw", "pshufhw", "pshufd", "psrlw", "psraw", "psllw", "psrld", "psrad", "pslld", "psrlq", "psrldq", "psllq", "pslldq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "emms", "vmread", "vmwrite", "haddpd", "haddps", "hsubpd", "hsubps", "seto", "setno", "setb", "setae", "sete", "setne", "setbe", "seta", "sets", "setns", "setp", "setnp", "setl", "setge", "setle", "setg", "cpuid", "bt", "shld", "rsm", "bts", "shrd", "fxsave", "fxrstor", "ldmxcsr", "stmxcsr", "xsave", "lfence", "xrstor", "xsaveopt", "mfence", "sfence", "clflush", "cmpxchg", "lss", "btr", "lfs", "lgs", "movzx", "popcnt", "btc", "bsf", "bsr", "movsx", "xadd", "cmpps", "cmpss", "cmppd", "cmpsd", "movnti", "pinsrw", "shufps", "shufpd", "vmptrld", "vmclear", "vmxon", "vmptrst", "bswap", "addsubpd", "addsubps", "paddq", "pmullw", "movq2dq", "movdq2q", "pmovmskb", "psubusb", "psubusw", "pminub", "pand", "paddusb", "paddusw", "pmaxub", "pandn", "pavgb", "pavgw", "pmulhuw", "pmulhw", "cvtpd2dq", "cvttpd2dq", "cvtdq2pd", "movntq", "movntdq", "psubsb", "psubsw", "pminsw", "por", "paddsb", "paddsw", "pmaxsw", "pxor", "lddqu", "pmuludq", "pmaddwd", "psadbw", "maskmovq", "maskmovdqu", "psubb", "psubw", "psubd", "psubq", "paddb", "paddw", "paddd" };
+	static const char* const BehaviourString[] = { "invalid", "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp", "push", "pop", "movsxd", "imul", "ins", "outs", "jo", "jno", "jb", "jae", "je", "jne", "jbe", "ja", "js", "jns", "jp", "jnp", "jl", "jge", "jle", "jg", "jmp", "test", "xchg", "mov", "lea", "nop", "wait", "pushf", "popf", "sahf", "lahf", "movs", "cmps", "stos", "lods", "scas", "rol", "ror", "rcl", "rcr", "shl", "shr", "sar", "ret", "enter", "leave", "int", "iret", "xlat", "fadd", "fmul", "fcom", "fcomp", "fsub", "fsubr", "fdiv", "fdivr", "fld", "fxch", "fst", "fstp", "fnop", "fldenv", "fchs", "fabs", "ftst", "fxam", "fldcw", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "cbw", "cwd", "cdq", "cqo", "fnstenv", "fstenv", "f2xm1", "fyl2x", "fptan", "fpatan", "fxtract", "fprem1", "fdecstp", "fincstp", "fnstcw", "fstcw", "fprem", "fyl2xp1", "fsqrt", "fsincos", "frandint", "fscale", "fsin", "fcos", "fiadd", "fcmovb", "fimul", "fcmove", "ficom", "fcmovbe", "ficomp", "fcmovu", "fisub", "fisubr", "fucompp", "fidiv", "fidivr", "fild", "fcmovnb", "fisttp", "fcmovne", "fist", "fcmovnbe", "fistp", "fcmovnu", "fnclex", "fclex", "fninit", "finit", "fucomi", "fcomi", "ffree", "frstor", "fucom", "fucomp", "fnsave", "fsave", "fnstsw", "fstsw", "faddp", "fmulp", "fcompp", "subrp", "subp", "divrp", "divp", "ffreep", "fbld", "fucomip", "fbstp", "fcomip", "loopnz", "loopz", "loop", "in", "out", "call", "icebp", "hlt", "cmc", "not", "neg", "mul", "div", "idiv", "clc", "stc", "cli", "sti", "cld", "std", "inc", "dec", "sldt", "str", "lldt", "ltr", "verr", "verw", "sgdt", "enclv", "vmcall", "vmlaunch", "vmresume", "vmoff", "pconfig", "sidt", "monitor", "mwait", "clac", "stac", "lgdt", "xgetbv", "xsetbv", "vmfunc", "xend", "xtest", "enclu", "lidt", "vmrun", "vmmcall", "vmload", "vmsave", "stgi", "clgi", "skinit", "invlpga", "smsw", "serialize", "rdpkru", "wrpkru", "lmsw", "invlpg", "swapgs", "rdiscp", "monitorx", "mwaitx", "clzero", "rdpru", "lar", "lsl", "syscall", "clts", "sysret", "invd", "wbinvd", "movups", "movss", "movupd", "movsd", "movhlps", "movlps", "movlpd", "movddup", "movsldup", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "movlhps", "movhps", "movhpd", "movshdup", "prefetchw", "prefetchwt1", "prefetchnta", "prefetcht0", "prefetcht1" , "prefetcht2", "movaps", "movapd", "cvtpi2ps", "cvtsi2ss", "cvtpi2pd", "cvtsi2sd", "movntps", "movntpd", "cvttps2pi", "cvttss2si", "cvttpd2pi", "cvttsd2si", "cvtps2pi", "cvtss2si", "cvtpd2pi", "cvtsd2si", "ucomiss", "ucomisd", "comiss", "comisd", "wrmsr", "rdtsc", "rdmsr", "rdpmc", "sysenter" , "sysexit" , "getsec", "invept", "invvpid", "movbe", "crc32", "roundps", "roundpd", "roundss", "roundsd", "blendps", "blendpd", "pblendw", "palignr", "pextrb", "pextrw", "pextr", "extractps", "pinsrb", "insertps", "pinsr", "dpps", "dppd", "mpsadbw", "pcmpestrm", "pcmpestri", "pcmpistrm", "pcmpistri", "cmovo", "cmovno", "cmovb", "cmovae", "cmove", "cmovne", "cmovbe", "cmova", "cmovs", "cmovns", "cmovp", "cmovnp", "cmovl", "cmovge", "cmovle", "cmovg", "movmskps", "movmskpd", "sqrtps", "sqrtss", "sqrtpd", "sqrtsd", "rsqrtps", "rsqrtss", "rcpps", "rcpss", "andps", "andpd", "andnps", "andnpd", "orps", "orpd", "xorps", "xorpd", "addps", "addss", "addpd", "addsd", "mulps", "mulss", "mulpd", "mulsd", "cvtps2pd", "cvtpd2ps", "cvtss2sd", "cvtsd2ss", "cvtdq2ps", "cvtps2dq", "cvttps2dq", "subps", "subss", "subpd", "subsd", "minps", "minss", "minpd", "minsd", "divps", "divss", "divps", "divsd", "maxps", "maxss", "maxpd", "maxsd", "punpcklbw", "punpcklwd", "punpckldq", "packsswb", "pcmpgtb", "pcmpgtw", "pcmpgtd", "packuswb", "punpckhbw", "punpckhwd", "punpckhdq", "packssdw", "punpcklqdq", "punpckhqdq", "movq", "movdqa", "movdqu", "pshufw", "pshuflw", "pshufhw", "pshufd", "psrlw", "psraw", "psllw", "psrld", "psrad", "pslld", "psrlq", "psrldq", "psllq", "pslldq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "emms", "vmread", "vmwrite", "haddpd", "haddps", "hsubpd", "hsubps", "seto", "setno", "setb", "setae", "sete", "setne", "setbe", "seta", "sets", "setns", "setp", "setnp", "setl", "setge", "setle", "setg", "cpuid", "bt", "shld", "rsm", "bts", "shrd", "fxsave", "fxrstor", "ldmxcsr", "stmxcsr", "xsave", "lfence", "xrstor", "xsaveopt", "mfence", "sfence", "clflush", "cmpxchg", "lss", "btr", "lfs", "lgs", "movzx", "popcnt", "btc", "bsf", "bsr", "movsx", "xadd", "cmpps", "cmpss", "cmppd", "cmpsd", "movnti", "pinsrw", "shufps", "shufpd", "vmptrld", "vmclear", "vmxon", "vmptrst", "bswap", "addsubpd", "addsubps", "paddq", "pmullw", "movq2dq", "movdq2q", "pmovmskb", "psubusb", "psubusw", "pminub", "pand", "paddusb", "paddusw", "pmaxub", "pandn", "pavgb", "pavgw", "pmulhuw", "pmulhw", "cvtpd2dq", "cvttpd2dq", "cvtdq2pd", "movntq", "movntdq", "psubsb", "psubsw", "pminsw", "por", "paddsb", "paddsw", "pmaxsw", "pxor", "lddqu", "pmuludq", "pmaddwd", "psadbw", "maskmovq", "maskmovdqu", "psubb", "psubw", "psubd", "psubq", "paddb", "paddw", "paddd"};
 	return BehaviourString[Behaviour];
 }
 
@@ -132,7 +138,7 @@ static void VisualizeOperand(const Operand* Operand, const void* Location, const
 	{
 	case OperandType_M:
 	{
-		if (Components->Flags[ComponentFlags_SpecifyMemorySize])
+		if (Components->Flags[ComponentFlags_SpecifyMemorySize] && Operand->OperandSize)
 			printf("\x1b[38;2;%u;%u;%um%s ", BREAK_RGB(Components->Colors[ComponentColors_MemorySize]), MemorySizes[Operand->OperandSize - 1]);
 
 		if (Operand->Memory.Segment)
@@ -366,14 +372,15 @@ static void VisualizeBytes(const void* Location, unsigned char Size, const Visua
 
 	*(RunBuffer - 1) = 0;
 
-	printf("\x1b[38;2;%u;%u;%um%s\x1b[%uG", BREAK_RGB(Components->Colors[ComponentColors_OperationBytes]), Buffer, (((unsigned long)Components->OpcodeBytePadding) * 3) + 1);
+	printf("\x1b[38;2;%u;%u;%um%s\x1b[%uC", BREAK_RGB(Components->Colors[ComponentColors_OperationBytes]), Buffer, ((((unsigned long)Components->OpcodeBytePadding) * 3) + 1) - (RunBuffer - Buffer));
 }
 
 static void Visualize(const Operation* Operations, unsigned long OperationCount, const VisualComponents* Components)
 {
-	const char OperationSizeToChar[] = { 'b', 'w', 'd', 'q' };
+	const char OperationSizeToChar[] = { 0, 'b', 'w', 'd', 'q' };
 	const char* PrefixBehaviour[] = { "lock", "repz", "repnz" };
 
+	unsigned char BehaviourLength;
 	unsigned long ConsoleMode;
 
 	const void* BaseLocation;
@@ -397,6 +404,12 @@ static void Visualize(const Operation* Operations, unsigned long OperationCount,
 	{
 		if (Components->InstructionSizes)
 		{
+			if (Components->Flags[ComponentFlags_DisplayOperationAddress])
+				printf("\x1b[38;2;%u;%u;%um%llX ", BREAK_RGB(Components->Colors[ComponentColors_OperationAddress]), BaseLocation);
+
+			if (Components->Flags[ComponentFlags_DisplayOperationRelative])
+				printf("\x1b[38;2;%u;%u;%um%llX \x1b[%uG", BREAK_RGB(Components->Colors[ComponentColors_OperationRelative]), ((unsigned char*)BaseLocation) - ((unsigned char*)Components->DissasemblyBase), Components->OperationRelativePadding);
+
 			if (Components->Flags[ComponentFlags_DisplayOperationBytes])
 				VisualizeBytes(Location, Components->InstructionSizes[i], Components);
 
@@ -416,10 +429,20 @@ static void Visualize(const Operation* Operations, unsigned long OperationCount,
 			continue;
 		}
 
+		BehaviourLength = 0;
 		if (Operations->Type)
+		{
 			printf("\x1b[38;2;%u;%u;%um%s ", BREAK_RGB(Components->Colors[ComponentColors_PreBehaviour]), PrefixBehaviour[Operations->Type - 1]);
+			BehaviourLength = strlen(PrefixBehaviour[Operations->Type - 1]) + 1;
+		}
 
-		printf("\x1b[38;2;%u;%u;%um%s ", BREAK_RGB(Components->Colors[ComponentColors_Behaviour]), MapBehaviourToString((InstructionBehaviour)Operations->Behaviour));
+		BehaviourLength += strlen(MapBehaviourToString((InstructionBehaviour)Operations->Behaviour));
+		if (BehaviourLength > Components->BehaviourOperandPadding)
+			BehaviourLength = 0;
+		else
+			BehaviourLength = Components->BehaviourOperandPadding - BehaviourLength;
+
+		printf("\x1b[38;2;%u;%u;%um%s\x1b[%uC", BREAK_RGB(Components->Colors[ComponentColors_Behaviour]), MapBehaviourToString((InstructionBehaviour)Operations->Behaviour), ((unsigned long)BehaviourLength) + 1);
 		for (unsigned long i = 0; Operations->N.Operands[i].Type && i < (sizeof(Operations->N.Operands) / sizeof(Operations->N.Operands[0])); i++)
 		{
 			VisualizeOperand(&Operations->N.Operands[i], BaseLocation, Components);

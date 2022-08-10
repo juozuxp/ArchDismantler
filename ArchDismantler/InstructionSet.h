@@ -251,6 +251,8 @@ typedef enum _InstructionBehaviour
 	InstructionBehaviour_Movhps,
 	InstructionBehaviour_Movhpd,
 	InstructionBehaviour_Movshdup,
+	InstructionBehaviour_Prefetchw,
+	InstructionBehaviour_Prefetchwt1,
 	InstructionBehaviour_Prefetchnta,
 	InstructionBehaviour_Prefetcht0,
 	InstructionBehaviour_Prefetcht1,

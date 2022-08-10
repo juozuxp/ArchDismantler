@@ -5839,12 +5839,14 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x02].Type = x86_x64InstructionType_Normal;
 	SubSet[0x02].Behaviour = InstructionBehaviour_Not;
+	SubSet[0x02].Lockable = 1;
 
 	SubSet[0x02].N.Operands[0].O8 = 1;
 	SubSet[0x02].N.Operands[0].Type = x86_x64OperandType_M;
 
 	SubSet[0x03].Type = x86_x64InstructionType_Normal;
 	SubSet[0x03].Behaviour = InstructionBehaviour_Neg;
+	SubSet[0x03].Lockable = 1;
 
 	SubSet[0x03].N.Operands[0].O8 = 1;
 	SubSet[0x03].N.Operands[0].Type = x86_x64OperandType_M;
@@ -5954,6 +5956,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x02].Type = x86_x64InstructionType_Normal;
 	SubSet[0x02].Behaviour = InstructionBehaviour_Not;
+	SubSet[0x02].Lockable = 1;
 
 	SubSet[0x02].N.Operands[0].O16 = 1;
 	SubSet[0x02].N.Operands[0].O32 = 1;
@@ -5962,6 +5965,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x03].Type = x86_x64InstructionType_Normal;
 	SubSet[0x03].Behaviour = InstructionBehaviour_Neg;
+	SubSet[0x03].Lockable = 1;
 
 	SubSet[0x03].N.Operands[0].O16 = 1;
 	SubSet[0x03].N.Operands[0].O32 = 1;
@@ -6077,12 +6081,14 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x00].Type = x86_x64InstructionType_Normal;
 	SubSet[0x00].Behaviour = InstructionBehaviour_Inc;
+	SubSet[0x00].Lockable = 1;
 
 	SubSet[0x00].N.Operands[0].O8 = 1;
 	SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
 
 	SubSet[0x01].Type = x86_x64InstructionType_Normal;
 	SubSet[0x01].Behaviour = InstructionBehaviour_Dec;
+	SubSet[0x01].Lockable = 1;
 
 	SubSet[0x01].N.Operands[0].O8 = 1;
 	SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_M;
@@ -6103,6 +6109,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x00].Type = x86_x64InstructionType_Normal;
 	SubSet[0x00].Behaviour = InstructionBehaviour_Inc;
+	SubSet[0x00].Lockable = 1;
 
 	SubSet[0x00].N.Operands[0].O16 = 1;
 	SubSet[0x00].N.Operands[0].O32 = 1;
@@ -6111,6 +6118,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x01].Type = x86_x64InstructionType_Normal;
 	SubSet[0x01].Behaviour = InstructionBehaviour_Dec;
+	SubSet[0x01].Lockable = 1;
 
 	SubSet[0x01].N.Operands[0].O16 = 1;
 	SubSet[0x01].N.Operands[0].O32 = 1;
@@ -6679,12 +6687,26 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 	ExSet[0x09].Type = x86_x64InstructionType_Normal;
 	ExSet[0x09].Behaviour = InstructionBehaviour_Wbinvd;
 
-	ExSet[0x0D].Type = x86_x64InstructionType_Normal;
-	ExSet[0x0D].Behaviour = InstructionBehaviour_Nop;
+	ExSet[0x0D].Type = x86_x64InstructionType_UpperRedirect;
 
-	ExSet[0x0D].N.Operands[0].O16 = 1;
-	ExSet[0x0D].N.Operands[0].O32 = 1;
-	ExSet[0x0D].N.Operands[0].Type = x86_x64OperandType_M;
+	SubSet = ALLOCATE_BUFFER(AllocationArrow, SetBuffer, 2);
+
+	ExSet[0x0D].R.A1 = 1;
+	ExSet[0x0D].R.A2 = 1;
+
+	ExSet[0x0D].RP.Index = INDEX_BUFFER(&ExSet[0x0D], SubSet);
+
+	SubSet[0x00].Type = x86_x64InstructionType_Normal;
+	SubSet[0x00].Behaviour = InstructionBehaviour_Prefetchw;
+
+	SubSet[0x00].N.Operands[0].O8 = 1;
+	SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
+
+	SubSet[0x01].Type = x86_x64InstructionType_Normal;
+	SubSet[0x01].Behaviour = InstructionBehaviour_Prefetchwt1;
+
+	SubSet[0x01].N.Operands[0].O8 = 1;
+	SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_M;
 
 	ExSet[0x10].Type = x86_x64InstructionType_PrefixRedirect;
 
@@ -6695,7 +6717,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 	ExSet[0x10].RP.A4 = 1;
 	ExSet[0x10].RP.DC = 1;
 
-	ExSet[0x10].R.Index = INDEX_BUFFER(&ExSet[0x10], SubSet);
+	ExSet[0x10].RP.Index = INDEX_BUFFER(&ExSet[0x10], SubSet);
 
 	SubSet[0x00].Type = x86_x64InstructionType_Normal;
 	SubSet[0x00].Behaviour = InstructionBehaviour_Movupd;
@@ -11106,6 +11128,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	ExSet[0xAB].Type = x86_x64InstructionType_Normal;
 	ExSet[0xAB].Behaviour = InstructionBehaviour_Bts;
+	ExSet[0xAB].Lockable = 1;
 
 	ExSet[0xAB].N.Operands[0].O16 = 1;
 	ExSet[0xAB].N.Operands[0].O32 = 1;
@@ -11340,9 +11363,9 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 	ExSet[0xAF].N.Operands[1].O64 = 1;
 	ExSet[0xAF].N.Operands[1].Type = x86_x64OperandType_M;
 
-	ExSet[0xB0].Lockable = 1;
 	ExSet[0xB0].Type = x86_x64InstructionType_Normal;
 	ExSet[0xB0].Behaviour = InstructionBehaviour_Cmpxchg;
+	ExSet[0xB0].Lockable = 1;
 
 	ExSet[0xB0].N.Operands[0].O8 = 1;
 	ExSet[0xB0].N.Operands[0].Type = x86_x64OperandType_M;
@@ -11354,9 +11377,9 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 	ExSet[0xB0].N.Operands[2].O8 = 1;
 	ExSet[0xB0].N.Operands[2].Type = x86_x64OperandType_R;
 
-	ExSet[0xB1].Lockable = 1;
 	ExSet[0xB1].Type = x86_x64InstructionType_Normal;
 	ExSet[0xB1].Behaviour = InstructionBehaviour_Cmpxchg;
+	ExSet[0xB1].Lockable = 1;
 
 	ExSet[0xB1].N.Operands[0].O16 = 1;
 	ExSet[0xB1].N.Operands[0].O32 = 1;
@@ -11402,6 +11425,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	ExSet[0xB3].Type = x86_x64InstructionType_Normal;
 	ExSet[0xB3].Behaviour = InstructionBehaviour_Btr;
+	ExSet[0xB3].Lockable = 1;
 
 	ExSet[0xB3].N.Operands[0].O16 = 1;
 	ExSet[0xB3].N.Operands[0].O32 = 1;
@@ -11527,44 +11551,48 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 	SubSet[0x00].N.Operands[0].O64 = 1;
 	SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_M;
 
-	SubSet[0x00].N.Operands[0].O8 = 1;
-	SubSet[0x00].N.Operands[0].Type = x86_x64OperandType_IMM;
+	SubSet[0x00].N.Operands[1].O8 = 1;
+	SubSet[0x00].N.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SubSet[0x01].Type = x86_x64InstructionType_Normal;
 	SubSet[0x01].Behaviour = InstructionBehaviour_Bts;
+	SubSet[0xB1].Lockable = 1;
 
 	SubSet[0x01].N.Operands[0].O16 = 1;
 	SubSet[0x01].N.Operands[0].O32 = 1;
 	SubSet[0x01].N.Operands[0].O64 = 1;
 	SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_M;
 
-	SubSet[0x01].N.Operands[0].O8 = 1;
-	SubSet[0x01].N.Operands[0].Type = x86_x64OperandType_IMM;
+	SubSet[0x01].N.Operands[1].O8 = 1;
+	SubSet[0x01].N.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SubSet[0x02].Type = x86_x64InstructionType_Normal;
 	SubSet[0x02].Behaviour = InstructionBehaviour_Btr;
+	SubSet[0xB2].Lockable = 1;
 
 	SubSet[0x02].N.Operands[0].O16 = 1;
 	SubSet[0x02].N.Operands[0].O32 = 1;
 	SubSet[0x02].N.Operands[0].O64 = 1;
 	SubSet[0x02].N.Operands[0].Type = x86_x64OperandType_M;
 
-	SubSet[0x02].N.Operands[0].O8 = 1;
-	SubSet[0x02].N.Operands[0].Type = x86_x64OperandType_IMM;
+	SubSet[0x02].N.Operands[1].O8 = 1;
+	SubSet[0x02].N.Operands[1].Type = x86_x64OperandType_IMM;
 
 	SubSet[0x03].Type = x86_x64InstructionType_Normal;
 	SubSet[0x03].Behaviour = InstructionBehaviour_Btc;
+	SubSet[0xB3].Lockable = 1;
 
 	SubSet[0x03].N.Operands[0].O16 = 1;
 	SubSet[0x03].N.Operands[0].O32 = 1;
 	SubSet[0x03].N.Operands[0].O64 = 1;
 	SubSet[0x03].N.Operands[0].Type = x86_x64OperandType_M;
 
-	SubSet[0x03].N.Operands[0].O8 = 1;
-	SubSet[0x03].N.Operands[0].Type = x86_x64OperandType_IMM;
+	SubSet[0x03].N.Operands[1].O8 = 1;
+	SubSet[0x03].N.Operands[1].Type = x86_x64OperandType_IMM;
 
 	ExSet[0xBB].Type = x86_x64InstructionType_Normal;
 	ExSet[0xBB].Behaviour = InstructionBehaviour_Btc;
+	ExSet[0xBB].Lockable = 1;
 
 	ExSet[0xBB].N.Operands[0].O16 = 1;
 	ExSet[0xBB].N.Operands[0].O32 = 1;
@@ -11626,6 +11654,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	ExSet[0xC0].Type = x86_x64InstructionType_Normal;
 	ExSet[0xC0].Behaviour = InstructionBehaviour_Xadd;
+	ExSet[0xC0].Lockable = 1;
 
 	ExSet[0xC0].N.Operands[0].O8 = 1;
 	ExSet[0xC0].N.Operands[0].Type = x86_x64OperandType_M;
@@ -11635,6 +11664,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	ExSet[0xC1].Type = x86_x64InstructionType_Normal;
 	ExSet[0xC1].Behaviour = InstructionBehaviour_Xadd;
+	ExSet[0xC1].Lockable = 1;
 
 	ExSet[0xC1].N.Operands[0].O16 = 1;
 	ExSet[0xC1].N.Operands[0].O32 = 1;
@@ -11987,6 +12017,7 @@ static void ConstructInstructionSet(x86_x64Instruction* SetBuffer, unsigned long
 
 	SubSet[0x00].Type = x86_x64InstructionType_Normal;
 	SubSet[0x00].Behaviour = InstructionBehaviour_Cmpxchg;
+	SubSet[0x00].Lockable = 1;
 
 	SubSet[0x00].N.Operands[0].O64 = 1;
 	SubSet[0x00].N.Operands[0].O128 = 1;
